@@ -1,7 +1,7 @@
 const db = require("../db");
 
 function startExpireJob() {
-setInterval(() => {
+setInterval(async () => {
 const now = new Date();
 
 const expireSql = `
