@@ -1,18 +1,17 @@
 const mysql = require("mysql2");
 
-const connection = mysql.createConnection({
-host: "localhost",
-user: "root",
-password: "123sjtransOK!", // isi kalau kamu pakai password MySQL
-database: "bus_booking"
-});
-
-connection.connect((err) => {
-if (err) {
-console.error("Koneksi database gagal:", err);
-} else {
-console.log("MySQL Connected ✅");
+const db = mysql.createPool({
+host: process.env.DB_HOST,
+user: process.env.DB_USER,
+password: process.env.DB_PASSWORD,
+database: process.env.DB_NAME,
+port: process.env.DB_PORT,
+waitForConnections: true,
+connectionLimit: 10,
+queueLimit: 0,
+ssl: {
+rejectUnauthorized: false
 }
 });
 
-module.exports = connection;
+module.exports = db.promise();
