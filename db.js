@@ -7,11 +7,8 @@ password: process.env.MYSQLPASSWORD,
 database: process.env.MYSQL_DATABASE,
 port: process.env.MYSQLPORT,
 waitForConnections: true,
-connectionLimit: 10,
-queueLimit: 0,
-ssl: {
-rejectUnauthorized: false
-}
+connectionLimit: 5,
+queueLimit: 0
 });
 
 module.exports = db.promise();
