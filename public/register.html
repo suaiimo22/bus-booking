@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Register - Bus Booking</title>
+</head>
+<body>
+
+<h2>Register</h2>
+
+<form id="registerForm">
+<input type="text" id="name" placeholder="Nama" required /><br><br>
+<input type="email" id="email" placeholder="Email" required /><br><br>
+<input type="password" id="password" placeholder="Password" required /><br><br>
+<button type="submit">Register</button>
+</form>
+
+<p id="message"></p>
+
+<script>
+const form = document.getElementById("registerForm");
+
+form.addEventListener("submit", async (e) => {
+e.preventDefault();
+
+const name = document.getElementById("name").value;
+const email = document.getElementById("email").value;
+const user_password = document.getElementById("password").value;
+
+const response = await fetch("/register", {
+method: "POST",
+headers: {
+"Content-Type": "application/json"
+},
+body: JSON.stringify({
+name,
+email,
+user_password
+})
+});
+
+const data = await response.json();
+
+document.getElementById("message").innerText = data.message;
+});
+</script>
+
+</body>
+</html>

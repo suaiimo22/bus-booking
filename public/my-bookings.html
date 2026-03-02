@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>My Bookings</title>
+</head>
+<body>
+
+<h2>My Bookings</h2>
+
+<button onclick="goBack()">← Kembali</button>
+<button onclick="logout()">Logout</button>
+
+<div id="bookingList"></div>
+
+<script>
+const token = localStorage.getItem("token");
+
+if (!token) {
+window.location.href = "login.html";
+}
+
+// ================= LOAD MY BOOKINGS =================
+fetch("/bookings/my", {
+headers: {
+"Authorization": "Bearer " + token
+}
+})
+.then(res => res.json())
+.then(data => {
+const container = document.getElementById("bookingList");
+
+if (!Array.isArray(data) || data.length === 0) {
+container.innerHTML = "<p>Belum ada booking</p>";
+return;
+}
+
+data.forEach(booking => {
+
+const div = document.createElement("div");
+div.style.border = "1px solid black";
+div.style.padding = "10px";
+div.style.margin = "10px 0";
+
+div.innerHTML = `
+<p>
+<strong>${booking.origin}</strong> →
+<strong>${booking.destination}</strong>
+</p>
+<p>Seat: ${booking.seat_number}</p>
+<p>Price: Rp ${booking.price}</p>
+<p>Status: ${booking.status}</p>
+<p>Tanggal: ${new Date(booking.created_at).toLocaleString()}</p>
+${
+booking.status === "BOOKED"
+? `<button onclick="cancelBooking(${booking.id})">Cancel</button>`
+: ""
+}
+`;
+
+container.appendChild(div);
+});
+});
+
+// ================= CANCEL BOOKING =================
+function cancelBooking(id) {
+
+if (!confirm("Yakin mau cancel booking ini?")) return;
+
+fetch("/bookings/cancel/" + id, {
+method: "PUT",
+headers: {
+"Authorization": "Bearer " + token
+}
+})
+.then(res => res.json())
+.then(data => {
+alert(data.message);
+location.reload();
+});
+}
+
+function goBack() {
+window.location.href = "index.html";
+}
+
+function logout() {
+localStorage.removeItem("token");
+window.location.href = "login.html";
+}
+</script>
+
+</body>
+</html>
