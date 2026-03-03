@@ -38,7 +38,7 @@ message: "Semua field wajib diisi"
 const hashedPassword = await bcrypt.hash(user_password, 10);
 
 await db.query(
-"INSERT INTO users (name, email, user_password) VALUES (?, ?, ?)",
+"INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
 [name, email, hashedPassword]
 );
 
@@ -68,7 +68,7 @@ return res.status(400).json({ message: "User tidak ditemukan" });
 
 const user = results[0];
 
-const isMatch = await bcrypt.compare(password, user.user_password);
+const isMatch = await bcrypt.compare(password, user.password);
 
 if (!isMatch) {
 return res.status(400).json({ message: "Password salah" });
