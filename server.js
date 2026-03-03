@@ -31,12 +31,11 @@ ALTER TABLE schedules
 ADD COLUMN arrival_time DATETIME NULL
 `).catch(() => {});
 
-console.log("Migration schedules checked ✅");
+console.log("Migration checked ✅");
 } catch (err) {
 console.log("Migration skipped");
 }
 }
-
 autoMigrate();
 
 
@@ -51,7 +50,7 @@ return res.status(400).json({ message: "Semua field wajib diisi" });
 const hashed = await bcrypt.hash(user_password, 10);
 
 await db.query(
-"INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
+"INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, 'user')",
 [name, email, hashed]
 );
 
@@ -79,7 +78,6 @@ return res.status(400).json({ message: "User tidak ditemukan" });
 const user = rows[0];
 
 const match = await bcrypt.compare(password, user.password);
-
 if (!match)
 return res.status(400).json({ message: "Password salah" });
 
@@ -93,6 +91,22 @@ res.json({ message: "Login berhasil", token });
 
 } catch (err) {
 res.status(500).json({ message: "Server error" });
+}
+});
+
+
+/* ================= FORCE ADMIN (AUTO) ================= */
+app.get("/make-admin", async (req, res) => {
+try {
+await db.query(`
+UPDATE users
+SET role = 'admin'
+WHERE email = 'admin@email.com'
+`);
+
+res.send("User upgraded to admin ✅");
+} catch (err) {
+res.status(500).json(err);
 }
 });
 
@@ -130,7 +144,6 @@ error: err.message
 /* ================= ADMIN CREATE SCHEDULE ================= */
 app.post("/admin/schedules", verifyToken, async (req, res) => {
 try {
-
 if (req.user.role !== "admin")
 return res.status(403).json({ message: "Akses admin saja" });
 
