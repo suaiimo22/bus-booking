@@ -5,7 +5,6 @@ const app = express();
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const PDFDocument = require("pdfkit");
 
 const db = require("./db");
 const verifyAdmin = require("./middleware/verifyAdmin");
@@ -59,15 +58,21 @@ res.status(500).json(err);
 }
 });
 
-// ================= SAMPLE BUS =================
-app.get("/add-sample-bus", async (req, res) => {
+// ================= SAMPLE DATA =================
+app.get("/seed-data", async (req, res) => {
 try {
 await db.query(`
 INSERT INTO buses (name, plate_number, total_seats, bus_class)
-VALUES ('Bus Pariwisata 01', 'DK 1234 AB', 40, 'Executive')
+VALUES ('Bus Executive 01', 'DK 1234 AB', 40, 'Executive')
 `);
 
-res.send("Sample bus added ✅");
+await db.query(`
+INSERT INTO routes (origin, destination, distance)
+VALUES ('Denpasar', 'Surabaya', 350)
+`);
+
+res.send("Sample bus & route added ✅");
+
 } catch (err) {
 res.status(500).json(err);
 }
@@ -125,7 +130,7 @@ res.status(500).json({ message: "Server error" });
 }
 });
 
-// ================= BOOKING (TETAP JALAN) =================
+// ================= BOOKING =================
 app.post("/bookings", verifyToken, async (req, res) => {
 try {
 const { schedule_id, seat_number } = req.body;
