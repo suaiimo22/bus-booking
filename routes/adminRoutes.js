@@ -107,5 +107,29 @@ res.json({ message: "Schedule berhasil diupdate" });
 });
 });
 
+/* ======================================================
+ADMIN - ADD NEW SCHEDULE
+====================================================== */
+router.post("/admin/schedules", verifyToken, verifyAdmin, (req, res) => {
+
+const { origin, destination, bus_name, price } = req.body;
+
+if (!origin || !destination || !bus_name || !price) {
+return res.status(400).json({ message: "Semua field wajib diisi" });
+}
+
+const sql = `
+INSERT INTO schedules (origin, destination, bus_name, price)
+VALUES (?, ?, ?, ?)
+`;
+
+db.query(sql, [origin, destination, bus_name, price], (err) => {
+if (err) {
+return res.status(500).json({ message: "Gagal tambah schedule" });
+}
+
+res.json({ message: "Schedule berhasil ditambahkan" });
+});
+});
 
 module.exports = router;

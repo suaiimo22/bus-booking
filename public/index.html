@@ -1,124 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Bus Booking</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
-<style>
-body {
-background: #f4f6f9;
-font-family: 'Segoe UI', sans-serif;
-}
-
-.navbar {
-background: linear-gradient(90deg, #0d6efd, #0b5ed7);
-}
-
-.hero-section {
-background: white;
-padding: 30px;
-border-radius: 12px;
-box-shadow: 0 5px 20px rgba(0,0,0,0.05);
-}
-
-.card {
-border: none;
-border-radius: 12px;
-transition: 0.3s;
-}
-
-.card:hover {
-transform: translateY(-5px);
-box-shadow: 0 10px 25px rgba(0,0,0,0.08);
-}
-
-.price-tag {
-font-size: 18px;
-font-weight: bold;
-color: #0d6efd;
-}
-
-/* SEAT STYLE */
-.seat {
-width: 45px;
-height: 45px;
-border-radius: 8px;
-border: 1px solid #ddd;
-display: flex;
-align-items: center;
-justify-content: center;
-cursor: pointer;
-margin: 5px;
-background: white;
-transition: 0.2s;
-}
-
-.seat:hover {
-background: #e7f1ff;
-}
-
-.seat.selected {
-background: #0d6efd;
-color: white;
-border: none;
-}
-</style>
-</head>
-
-<body>
-
-<nav class="navbar navbar-expand-lg navbar-dark shadow-sm">
-<div class="container">
-<span class="navbar-brand fw-bold">
-<i class="bi bi-bus-front-fill"></i> Bus Booking
-</span>
-<div>
-<a href="/my-bookings.html" class="btn btn-light btn-sm me-2">
-<i class="bi bi-ticket-perforated"></i> My Bookings
-</a>
-<button onclick="logout()" class="btn btn-danger btn-sm">
-<i class="bi bi-box-arrow-right"></i> Logout
-</button>
-</div>
-</div>
-</nav>
-
-<div class="container mt-5">
-
-<div class="hero-section mb-4">
-<h3 class="fw-bold mb-2">
-<i class="bi bi-calendar-event"></i> Available Schedules
-</h3>
-<p class="text-muted mb-0">
-Choose your destination and book your seat easily.
-</p>
-</div>
-
-<div class="row" id="scheduleList"></div>
-
-</div>
-
-<!-- SEAT MODAL -->
-<div class="modal fade" id="seatModal" tabindex="-1">
-<div class="modal-dialog modal-dialog-centered">
-<div class="modal-content">
-<div class="modal-header">
-<h5 class="modal-title">Select Your Seat</h5>
-<button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-</div>
-<div class="modal-body text-center">
-<div class="d-flex flex-wrap justify-content-center" id="seatContainer"></div>
-</div>
-</div>
-</div>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
 <script>
 const token = localStorage.getItem("token");
 if (!token) window.location.href = "/login.html";
@@ -127,6 +6,7 @@ let selectedSchedule = null;
 let selectedSeat = null;
 const seatModal = new bootstrap.Modal(document.getElementById('seatModal'));
 
+/* ================= LOAD SCHEDULES ================= */
 async function loadSchedules() {
 const res = await fetch("/schedules");
 const data = await res.json();
@@ -142,7 +22,9 @@ col.innerHTML = `
 <div class="card h-100 shadow-sm">
 <div class="card-body d-flex flex-column">
 <h5 class="fw-bold">${s.origin} → ${s.destination}</h5>
-<p class="text-muted"><i class="bi bi-bus-front"></i> ${s.bus_name}</p>
+<p class="text-muted">
+<i class="bi bi-bus-front"></i> ${s.bus_name}
+</p>
 <div class="price-tag mb-3">Rp ${s.price}</div>
 <button class="btn btn-primary mt-auto w-100"
 onclick="openSeatModal(${s.id})">
@@ -155,6 +37,7 @@ container.appendChild(col);
 });
 }
 
+/* ================= OPEN SEAT MODAL ================= */
 async function openSeatModal(scheduleId) {
 selectedSchedule = scheduleId;
 selectedSeat = null;
@@ -175,7 +58,7 @@ const seat = document.createElement("div");
 seat.className = "seat";
 seat.innerText = i;
 
-if (bookedSeats.includes(i)) {
+if (bookedSeats.includes(i) || bookedSeats.includes(String(i))) {
 seat.style.background = "#ccc";
 seat.style.cursor = "not-allowed";
 seat.style.color = "#666";
@@ -196,6 +79,7 @@ container.appendChild(seat);
 seatModal.show();
 }
 
+/* ================= CONFIRM BOOKING ================= */
 async function confirmBooking() {
 if (!selectedSeat) return;
 
@@ -215,25 +99,8 @@ const data = await res.json();
 alert(data.message);
 seatModal.hide();
 }
-if (!selectedSeat) return;
 
-const res = await fetch("/bookings", {
-method: "POST",
-headers: {
-"Content-Type": "application/json",
-Authorization: "Bearer " + token
-},
-body: JSON.stringify({
-schedule_id: selectedSchedule,
-seat_number: selectedSeat
-})
-});
-
-const data = await res.json();
-alert(data.message);
-seatModal.hide();
-}
-
+/* ================= LOGOUT ================= */
 function logout() {
 localStorage.removeItem("token");
 window.location.href = "/login.html";
@@ -241,6 +108,3 @@ window.location.href = "/login.html";
 
 loadSchedules();
 </script>
-
-</body>
-</html>
