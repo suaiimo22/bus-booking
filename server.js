@@ -18,7 +18,7 @@ res.json({ status: "ok", message: "Bus Booking API running" });
 });
 
 
-// ================= GET SCHEDULES (TANPA arrival_time) =================
+// ================= GET SCHEDULES =================
 app.get("/schedules", async (req, res) => {
 try {
 const [results] = await db.query(`
@@ -43,6 +43,25 @@ res.status(500).json({
 message: "Query schedules gagal",
 error: err.message
 });
+}
+});
+
+
+// ================= LINK SCHEDULE TO BUS & ROUTE =================
+app.get("/link-schedule", async (req, res) => {
+try {
+
+await db.query(`
+UPDATE schedules
+SET bus_id = 1,
+route_id = 1
+WHERE id = 1
+`);
+
+res.send("Schedule linked successfully ✅");
+
+} catch (err) {
+res.status(500).json(err);
 }
 });
 
