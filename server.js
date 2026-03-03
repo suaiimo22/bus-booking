@@ -266,7 +266,7 @@ message: "Gagal ambil data booking"
 });
 
 // ================= AUTO EXPIRE =================
-startExpireJob();
+// startExpireJob();
 
 // ================= START SERVER =================
 const PORT = process.env.PORT || 3000;
