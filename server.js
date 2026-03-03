@@ -5,10 +5,8 @@ const app = express();
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
-const PDFDocument = require("pdfkit");
 
 const db = require("./db");
-const verifyAdmin = require("./middleware/verifyAdmin");
 const verifyToken = require("./middleware/verifyToken");
 const startExpireJob = require("./services/expireService");
 
@@ -20,19 +18,17 @@ res.json({ status: "ok", message: "Bus Booking API running" });
 });
 
 
-// ================= GET SCHEDULES (SAFE VERSION) =================
+// ================= GET SCHEDULES (TANPA arrival_time) =================
 app.get("/schedules", async (req, res) => {
 try {
 const [results] = await db.query(`
 SELECT
 s.id,
-b.name AS bus_name,
-b.total_seats,
+s.price,
 r.origin,
 r.destination,
-s.departure_time,
-s.arrival_time,
-s.price
+b.name AS bus_name,
+b.total_seats
 FROM schedules s
 LEFT JOIN buses b ON s.bus_id = b.id
 LEFT JOIN routes r ON s.route_id = r.id
