@@ -5,6 +5,7 @@ const app = express();
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
+const PDFDocument = require("pdfkit");
 
 const db = require("./db");
 const verifyAdmin = require("./middleware/verifyAdmin");
@@ -18,64 +19,6 @@ app.use(express.static(path.join(__dirname, "public")));
 // ================= ROOT =================
 app.get("/", (req, res) => {
 res.json({ status: "ok", message: "Bus Booking API running" });
-});
-
-// ================= MIGRATION V2 =================
-app.get("/migrate-v2", async (req, res) => {
-try {
-await db.query(`
-CREATE TABLE IF NOT EXISTS buses (
-id INT AUTO_INCREMENT PRIMARY KEY,
-name VARCHAR(100) NOT NULL,
-plate_number VARCHAR(50),
-total_seats INT NOT NULL,
-bus_class VARCHAR(50),
-status VARCHAR(20) DEFAULT 'ACTIVE',
-image VARCHAR(255),
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-`);
-
-await db.query(`
-CREATE TABLE IF NOT EXISTS routes (
-id INT AUTO_INCREMENT PRIMARY KEY,
-origin VARCHAR(100) NOT NULL,
-destination VARCHAR(100) NOT NULL,
-distance INT,
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
-`);
-
-await db.query(`
-ALTER TABLE schedules
-ADD COLUMN bus_id INT,
-ADD COLUMN route_id INT
-`).catch(() => {});
-
-res.send("Migration V2 success ✅");
-} catch (err) {
-res.status(500).json(err);
-}
-});
-
-// ================= SAMPLE DATA =================
-app.get("/seed-data", async (req, res) => {
-try {
-await db.query(`
-INSERT INTO buses (name, plate_number, total_seats, bus_class)
-VALUES ('Bus Executive 01', 'DK 1234 AB', 40, 'Executive')
-`);
-
-await db.query(`
-INSERT INTO routes (origin, destination, distance)
-VALUES ('Denpasar', 'Surabaya', 350)
-`);
-
-res.send("Sample bus & route added ✅");
-
-} catch (err) {
-res.status(500).json(err);
-}
 });
 
 // ================= REGISTER =================
@@ -94,6 +37,7 @@ await db.query(
 );
 
 res.json({ message: "Register berhasil" });
+
 } catch {
 res.status(500).json({ message: "Email sudah terdaftar atau server error" });
 }
@@ -125,6 +69,54 @@ process.env.SECRET_KEY,
 );
 
 res.json({ message: "Login berhasil", token });
+
+} catch {
+res.status(500).json({ message: "Server error" });
+}
+});
+
+// ================= GET SCHEDULES =================
+app.get("/schedules", async (req, res) => {
+try {
+const [results] = await db.query(`
+SELECT
+schedules.id,
+buses.name AS bus_name,
+routes.origin,
+routes.destination,
+schedules.departure_time,
+schedules.arrival_time,
+schedules.price
+FROM schedules
+JOIN buses ON schedules.bus_id = buses.id
+JOIN routes ON schedules.route_id = routes.id
+ORDER BY schedules.departure_time ASC
+`);
+
+res.json(results);
+
+} catch {
+res.status(500).json({ message: "Gagal ambil schedules" });
+}
+});
+
+// ================= ADMIN CREATE SCHEDULE =================
+app.post("/admin/schedules", verifyToken, verifyAdmin, async (req, res) => {
+try {
+const { bus_id, route_id, departure_time, arrival_time, price } = req.body;
+
+if (!bus_id || !route_id || !departure_time || !price)
+return res.status(400).json({ message: "Data tidak lengkap" });
+
+await db.query(
+`INSERT INTO schedules
+(bus_id, route_id, departure_time, arrival_time, price)
+VALUES (?, ?, ?, ?, ?)`,
+[bus_id, route_id, departure_time, arrival_time, price]
+);
+
+res.json({ message: "Schedule berhasil dibuat" });
+
 } catch {
 res.status(500).json({ message: "Server error" });
 }
@@ -159,8 +151,90 @@ VALUES (?, ?, ?, 'PENDING', ?)`,
 
 res.json({
 message: "Booking berhasil dibuat",
-bookingId: result.insertId
+bookingId: result.insertId,
+expired_at: expiredAt
 });
+
+} catch {
+res.status(500).json({ message: "Server error" });
+}
+});
+
+// ================= PAYMENT =================
+app.post("/bookings/:id/pay", verifyToken, async (req, res) => {
+try {
+const bookingId = req.params.id;
+
+const [results] = await db.query(
+"SELECT * FROM bookings WHERE id = ?",
+[bookingId]
+);
+
+if (results.length === 0)
+return res.status(404).json({ message: "Booking tidak ditemukan" });
+
+const booking = results[0];
+
+if (booking.status === "PAID")
+return res.status(400).json({ message: "Sudah dibayar" });
+
+if (booking.expired_at && new Date(booking.expired_at) < new Date()) {
+await db.query(
+"UPDATE bookings SET status = 'EXPIRED' WHERE id = ?",
+[bookingId]
+);
+return res.status(400).json({ message: "Booking sudah expired" });
+}
+
+await db.query(
+"UPDATE bookings SET status = 'PAID', paid_at = NOW() WHERE id = ?",
+[bookingId]
+);
+
+res.json({ message: "Pembayaran berhasil (simulasi)" });
+
+} catch {
+res.status(500).json({ message: "Server error" });
+}
+});
+
+// ================= DOWNLOAD TICKET =================
+app.get("/ticket/:id", verifyToken, async (req, res) => {
+try {
+const bookingId = req.params.id;
+
+const [results] = await db.query(`
+SELECT b.*, s.price, r.origin, r.destination, u.name
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.id
+JOIN routes r ON s.route_id = r.id
+JOIN users u ON b.user_id = u.id
+WHERE b.id = ?
+`, [bookingId]);
+
+if (results.length === 0)
+return res.status(404).json({ message: "Booking tidak ditemukan" });
+
+const booking = results[0];
+
+if (booking.status !== "PAID")
+return res.status(400).json({ message: "Tiket hanya bisa diunduh jika PAID" });
+
+const doc = new PDFDocument();
+
+res.setHeader("Content-Type", "application/pdf");
+res.setHeader("Content-Disposition", `attachment; filename=ticket-${booking.id}.pdf`);
+
+doc.pipe(res);
+doc.fontSize(20).text("E-TICKET BUS", { align: "center" });
+doc.moveDown();
+doc.fontSize(14).text(`Nama: ${booking.name}`);
+doc.text(`Rute: ${booking.origin} → ${booking.destination}`);
+doc.text(`Seat: ${booking.seat_number}`);
+doc.text(`Harga: Rp ${booking.price}`);
+doc.text(`Booking ID: ${booking.id}`);
+doc.end();
+
 } catch {
 res.status(500).json({ message: "Server error" });
 }
