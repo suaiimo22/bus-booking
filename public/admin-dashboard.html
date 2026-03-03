@@ -38,7 +38,7 @@ Logout
 
 <div class="container mt-4">
 
-<!-- SUMMARY CARDS -->
+<!-- SUMMARY -->
 <div class="row mb-4">
 <div class="col-md-3">
 <div class="card p-3 text-center">
@@ -71,9 +71,14 @@ Logout
 
 <!-- MANAGE ROUTES -->
 <div class="card p-4">
-<h5 class="mb-3">
+<div class="d-flex justify-content-between align-items-center mb-3">
+<h5>
 <i class="bi bi-map"></i> Manage Routes
 </h5>
+<button class="btn btn-primary btn-sm" onclick="openAddModal()">
+<i class="bi bi-plus-circle"></i> Add Route
+</button>
+</div>
 
 <div id="scheduleList"></div>
 </div>
@@ -98,6 +103,24 @@ Save Changes
 </div>
 </div>
 
+<!-- ADD MODAL -->
+<div class="modal fade" id="addModal" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content p-4">
+<h5>Add New Schedule</h5>
+
+<input id="addOrigin" class="form-control mb-2" placeholder="Origin">
+<input id="addDestination" class="form-control mb-2" placeholder="Destination">
+<input id="addBus" class="form-control mb-2" placeholder="Bus Name">
+<input id="addPrice" type="number" class="form-control mb-3" placeholder="Price">
+
+<button class="btn btn-success w-100" onclick="saveNewSchedule()">
+Add Schedule
+</button>
+</div>
+</div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -106,8 +129,9 @@ if (!token) window.location.href = "/login.html";
 
 let currentScheduleId = null;
 const editModal = new bootstrap.Modal(document.getElementById("editModal"));
+const addModal = new bootstrap.Modal(document.getElementById("addModal"));
 
-/* ================= LOAD DASHBOARD ================= */
+/* ===== LOAD DASHBOARD ===== */
 async function loadDashboard() {
 const res = await fetch("/admin/dashboard", {
 headers: { Authorization: "Bearer " + token }
@@ -121,7 +145,7 @@ document.getElementById("totalPaid").innerText = data.totalPaid;
 document.getElementById("totalRevenue").innerText = "Rp " + data.totalRevenue;
 }
 
-/* ================= LOAD SCHEDULES ================= */
+/* ===== LOAD SCHEDULES ===== */
 async function loadSchedules() {
 const res = await fetch("/admin/schedules", {
 headers: { Authorization: "Bearer " + token }
@@ -146,7 +170,7 @@ Edit
 });
 }
 
-/* ================= EDIT ================= */
+/* ===== EDIT ===== */
 function editSchedule(id, origin, destination, bus, price) {
 currentScheduleId = id;
 
@@ -180,7 +204,38 @@ editModal.hide();
 loadSchedules();
 }
 
-/* ================= LOGOUT ================= */
+/* ===== ADD ===== */
+function openAddModal() {
+document.getElementById("addOrigin").value = "";
+document.getElementById("addDestination").value = "";
+document.getElementById("addBus").value = "";
+document.getElementById("addPrice").value = "";
+addModal.show();
+}
+
+async function saveNewSchedule() {
+const origin = document.getElementById("addOrigin").value;
+const destination = document.getElementById("addDestination").value;
+const bus_name = document.getElementById("addBus").value;
+const price = document.getElementById("addPrice").value;
+
+const res = await fetch("/admin/schedules", {
+method: "POST",
+headers: {
+"Content-Type": "application/json",
+Authorization: "Bearer " + token
+},
+body: JSON.stringify({ origin, destination, bus_name, price })
+});
+
+const data = await res.json();
+alert(data.message);
+
+addModal.hide();
+loadSchedules();
+}
+
+/* ===== LOGOUT ===== */
 function logout() {
 localStorage.removeItem("token");
 window.location.href = "/login.html";
