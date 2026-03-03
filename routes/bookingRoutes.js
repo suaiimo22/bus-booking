@@ -20,6 +20,7 @@ SELECT * FROM bookings
 WHERE schedule_id = ?
 AND seat_number = ?
 AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at > NOW())
 `;
 
 db.query(checkSeatSql, [schedule_id, seat_number], (err, results) => {
@@ -62,6 +63,7 @@ schedules.destination,
 schedules.price,
 bookings.seat_number,
 bookings.status,
+bookings.expired_at,
 bookings.created_at
 FROM bookings
 JOIN schedules ON bookings.schedule_id = schedules.id
@@ -70,13 +72,12 @@ ORDER BY bookings.created_at DESC
 `;
 
 db.query(sql, [user_id], (err, results) => {
-if (err) {
-return res.status(500).json({ message: "Database error" });
-}
+if (err) return res.status(500).json({ message: "Database error" });
 
 res.json(results);
 });
 });
+
 
 // ================= CANCEL BOOKING =================
 router.put("/bookings/cancel/:id", verifyToken, (req, res) => {
@@ -90,23 +91,16 @@ WHERE id = ? AND user_id = ?
 `;
 
 db.query(sql, [bookingId, user_id], (err, result) => {
-if (err) {
-return res.status(500).json({
-message: "Database error"
-});
-}
+if (err) return res.status(500).json({ message: "Database error" });
 
 if (result.affectedRows === 0) {
-return res.status(400).json({
-message: "Booking tidak ditemukan"
-});
+return res.status(400).json({ message: "Booking tidak ditemukan" });
 }
 
-res.json({
-message: "Booking berhasil dibatalkan"
+res.json({ message: "Booking berhasil dibatalkan" });
 });
 });
-});
+
 
 // ================= PAYMENT =================
 router.post("/bookings/:id/pay", verifyToken, (req, res) => {
@@ -121,16 +115,26 @@ return res.status(404).json({ message: "Booking tidak ditemukan" });
 
 const booking = results[0];
 
-if (booking.status === "EXPIRED") {
-return res.status(400).json({ message: "Booking sudah expired" });
-}
-
 if (booking.status === "PAID") {
 return res.status(400).json({ message: "Sudah dibayar" });
 }
 
+if (booking.status === "CANCELLED") {
+return res.status(400).json({ message: "Booking sudah dibatalkan" });
+}
+
+// CEK EXPIRE
+if (booking.expired_at && new Date(booking.expired_at) < new Date()) {
 db.query(
-"UPDATE bookings SET status = 'PAID' WHERE id = ?",
+"UPDATE bookings SET status = 'EXPIRED' WHERE id = ?",
+[bookingId]
+);
+
+return res.status(400).json({ message: "Booking sudah expired" });
+}
+
+db.query(
+"UPDATE bookings SET status = 'PAID' WHERE id = ?, paid_at = NOW()",
 [bookingId],
 (err) => {
 if (err) return res.status(500).json({ message: "Update error" });
@@ -141,6 +145,7 @@ res.json({ message: "Pembayaran berhasil (simulasi)" });
 });
 });
 
+
 // ================= GET BOOKED SEATS =================
 router.get("/bookings/seats/:scheduleId", verifyToken, (req, res) => {
 const scheduleId = req.params.scheduleId;
@@ -150,12 +155,11 @@ SELECT seat_number
 FROM bookings
 WHERE schedule_id = ?
 AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at > NOW())
 `;
 
 db.query(sql, [scheduleId], (err, results) => {
-if (err) {
-return res.status(500).json({ message: "Database error" });
-}
+if (err) return res.status(500).json({ message: "Database error" });
 
 const bookedSeats = results.map(row => row.seat_number);
 res.json(bookedSeats);
