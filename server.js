@@ -13,7 +13,12 @@ const db = require("./db");
 const verifyToken = require("./middleware/verifyToken");
 const startExpireJob = require("./services/expireService");
 
-app.use(helmet());
+app.use(
+    helmet({
+        contentSecurityPolicy: false
+    })
+);
+    
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
