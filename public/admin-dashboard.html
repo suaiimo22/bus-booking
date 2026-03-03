@@ -1,57 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+<meta charset="UTF-8">
 <title>Admin Dashboard</title>
-<link rel="stylesheet" href="admin-dashboard.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<style>
+body {
+background: #f4f6f9;
+font-family: 'Segoe UI', sans-serif;
+}
+.navbar {
+background: linear-gradient(90deg, #0d6efd, #0b5ed7);
+}
+.card {
+border: none;
+border-radius: 12px;
+}
+</style>
 </head>
+
 <body>
 
-<div class="sidebar">
-<h2>ADMIN PANEL</h2>
-<button onclick="logout()">Logout</button>
+<nav class="navbar navbar-dark shadow-sm">
+<div class="container">
+<span class="navbar-brand fw-bold">
+<i class="bi bi-speedometer2"></i> Admin Dashboard
+</span>
+<button onclick="logout()" class="btn btn-danger btn-sm">
+Logout
+</button>
 </div>
+</nav>
 
-<div class="main">
-<h1>Dashboard</h1>
+<div class="container mt-4">
 
-<div class="cards">
-<div class="card">
-<h3>Total Revenue</h3>
-<p id="totalRevenue">Rp 0</p>
-</div>
-
-<div class="card">
-<h3>Total Bookings</h3>
-<p id="totalBookings">0</p>
-</div>
-
-<div class="card">
-<h3>Active Bookings</h3>
-<p id="activeBookings">0</p>
-</div>
-
-<div class="card">
-<h3>Occupancy</h3>
-<p id="occupancy">0%</p>
+<!-- SUMMARY CARDS -->
+<div class="row mb-4">
+<div class="col-md-3">
+<div class="card p-3 text-center">
+<h6>Total Bookings</h6>
+<h3 id="totalBookings">0</h3>
 </div>
 </div>
 
-<h2>Recent Bookings</h2>
-<table>
-<thead>
-<tr>
-<th>User</th>
-<th>Route</th>
-<th>Seat</th>
-<th>Status</th>
-<th>Date</th>
-</tr>
-</thead>
-<tbody id="bookingTable"></tbody>
-</table>
+<div class="col-md-3">
+<div class="card p-3 text-center">
+<h6>Total Pending</h6>
+<h3 id="totalPending">0</h3>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card p-3 text-center">
+<h6>Total Paid</h6>
+<h3 id="totalPaid">0</h3>
+</div>
+</div>
+
+<div class="col-md-3">
+<div class="card p-3 text-center">
+<h6>Total Revenue</h6>
+<h3 id="totalRevenue">0</h3>
+</div>
+</div>
+</div>
+
+<!-- MANAGE ROUTES -->
+<div class="card p-4">
+<h5 class="mb-3">
+<i class="bi bi-map"></i> Manage Routes
+</h5>
+
+<div id="scheduleList"></div>
+</div>
 
 </div>
 
-<script src="admin-dashboard.js"></script>
+<!-- EDIT MODAL -->
+<div class="modal fade" id="editModal" tabindex="-1">
+<div class="modal-dialog">
+<div class="modal-content p-4">
+<h5>Edit Schedule</h5>
+
+<input id="editOrigin" class="form-control mb-2" placeholder="Origin">
+<input id="editDestination" class="form-control mb-2" placeholder="Destination">
+<input id="editBus" class="form-control mb-2" placeholder="Bus Name">
+<input id="editPrice" type="number" class="form-control mb-3" placeholder="Price">
+
+<button class="btn btn-success w-100" onclick="saveSchedule()">
+Save Changes
+</button>
+</div>
+</div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+const token = localStorage.getItem("token");
+if (!token) window.location.href = "/login.html";
+
+let currentScheduleId = null;
+const editModal = new bootstrap.Modal(document.getElementById("editModal"));
+
+/* ================= LOAD DASHBOARD ================= */
+async function loadDashboard() {
+const res = await fetch("/admin/dashboard", {
+headers: { Authorization: "Bearer " + token }
+});
+
+const data = await res.json();
+
+document.getElementById("totalBookings").innerText = data.totalBookings;
+document.getElementById("totalPending").innerText = data.totalPending;
+document.getElementById("totalPaid").innerText = data.totalPaid;
+document.getElementById("totalRevenue").innerText = "Rp " + data.totalRevenue;
+}
+
+/* ================= LOAD SCHEDULES ================= */
+async function loadSchedules() {
+const res = await fetch("/admin/schedules", {
+headers: { Authorization: "Bearer " + token }
+});
+
+const data = await res.json();
+const container = document.getElementById("scheduleList");
+container.innerHTML = "";
+
+data.forEach(s => {
+container.innerHTML += `
+<div class="border rounded p-3 mb-3">
+<h6>${s.origin} → ${s.destination}</h6>
+<p>Bus: ${s.bus_name}</p>
+<p>Harga: Rp ${s.price}</p>
+<button class="btn btn-warning btn-sm"
+onclick="editSchedule(${s.id}, '${s.origin}', '${s.destination}', '${s.bus_name}', ${s.price})">
+Edit
+</button>
+</div>
+`;
+});
+}
+
+/* ================= EDIT ================= */
+function editSchedule(id, origin, destination, bus, price) {
+currentScheduleId = id;
+
+document.getElementById("editOrigin").value = origin;
+document.getElementById("editDestination").value = destination;
+document.getElementById("editBus").value = bus;
+document.getElementById("editPrice").value = price;
+
+editModal.show();
+}
+
+async function saveSchedule() {
+const origin = document.getElementById("editOrigin").value;
+const destination = document.getElementById("editDestination").value;
+const bus_name = document.getElementById("editBus").value;
+const price = document.getElementById("editPrice").value;
+
+const res = await fetch(`/admin/schedules/${currentScheduleId}`, {
+method: "PUT",
+headers: {
+"Content-Type": "application/json",
+Authorization: "Bearer " + token
+},
+body: JSON.stringify({ origin, destination, bus_name, price })
+});
+
+const data = await res.json();
+alert(data.message);
+
+editModal.hide();
+loadSchedules();
+}
+
+/* ================= LOGOUT ================= */
+function logout() {
+localStorage.removeItem("token");
+window.location.href = "/login.html";
+}
+
+loadDashboard();
+loadSchedules();
+</script>
+
 </body>
 </html>
