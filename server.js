@@ -271,20 +271,7 @@ message: "Gagal ambil data booking"
 // ================= AUTO EXPIRE =================
 // startExpireJob();
 
-app.get("/update-db", async (req, res) => {
-try {
-await db.query(`
-ALTER TABLE bookings
-ADD COLUMN status VARCHAR(20) DEFAULT 'pending',
-ADD COLUMN expired_at DATETIME NULL,
-ADD COLUMN paid_at DATETIME NULL
-`);
 
-res.send("Database updated successfully ✅");
-} catch (err) {
-res.status(500).json(err);
-}
-});
 
 // ================= START SERVER =================
 const PORT = process.env.PORT;
