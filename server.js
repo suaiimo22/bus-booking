@@ -67,19 +67,20 @@ error: error.message
 
 
 // ================= LOGIN =================
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
+try {
 const { email, password } = req.body;
 
 const sql = "SELECT * FROM users WHERE email = ?";
 
-db.query(sql, [email], async (err, results) => {
-if (err) return res.status(500).json({ message: "Error server" });
+const [results] = await db.query(sql, [email]);
 
 if (results.length === 0) {
 return res.status(400).json({ message: "User tidak ditemukan" });
 }
 
 const user = results[0];
+
 const isMatch = await bcrypt.compare(password, user.user_password);
 
 if (!isMatch) {
@@ -96,9 +97,12 @@ res.json({
 message: "Login berhasil",
 token
 });
-});
-});
 
+} catch (error) {
+console.error("LOGIN ERROR:", error);
+res.status(500).json({ message: "Server error" });
+}
+});
 
 // ================= SCHEDULES =================
 app.get("/schedules", (req, res) => {
