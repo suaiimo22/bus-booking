@@ -24,7 +24,6 @@ res.json({ status: "ok", message: "Bus Booking API running" });
 // ================= MIGRATION V2 =================
 app.get("/migrate-v2", async (req, res) => {
 try {
-
 await db.query(`
 CREATE TABLE IF NOT EXISTS buses (
 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -55,7 +54,20 @@ ADD COLUMN route_id INT
 `).catch(() => {});
 
 res.send("Migration V2 success ✅");
+} catch (err) {
+res.status(500).json(err);
+}
+});
 
+// ================= SAMPLE BUS =================
+app.get("/add-sample-bus", async (req, res) => {
+try {
+await db.query(`
+INSERT INTO buses (name, plate_number, total_seats, bus_class)
+VALUES ('Bus Pariwisata 01', 'DK 1234 AB', 40, 'Executive')
+`);
+
+res.send("Sample bus added ✅");
 } catch (err) {
 res.status(500).json(err);
 }
@@ -66,9 +78,8 @@ app.post("/register", async (req, res) => {
 try {
 const { name, email, user_password } = req.body;
 
-if (!name || !email || !user_password) {
+if (!name || !email || !user_password)
 return res.status(400).json({ message: "Semua field wajib diisi" });
-}
 
 const hashedPassword = await bcrypt.hash(user_password, 10);
 
@@ -78,7 +89,6 @@ await db.query(
 );
 
 res.json({ message: "Register berhasil" });
-
 } catch {
 res.status(500).json({ message: "Email sudah terdaftar atau server error" });
 }
@@ -110,32 +120,16 @@ process.env.SECRET_KEY,
 );
 
 res.json({ message: "Login berhasil", token });
-
 } catch {
 res.status(500).json({ message: "Server error" });
 }
 });
 
-// ================= SCHEDULES =================
-app.get("/schedules", async (req, res) => {
-try {
-const [results] = await db.query("SELECT * FROM schedules");
-res.json(results);
-} catch {
-res.status(500).json({ message: "Gagal ambil data schedules" });
-}
-});
-
-// ================= BOOKING =================
+// ================= BOOKING (TETAP JALAN) =================
 app.post("/bookings", verifyToken, async (req, res) => {
 try {
 const { schedule_id, seat_number } = req.body;
 const user_id = req.user.id;
-
-if (!schedule_id || !seat_number)
-return res.status(400).json({
-message: "schedule_id dan seat_number wajib diisi"
-});
 
 const [seatCheck] = await db.query(
 `SELECT * FROM bookings
@@ -160,48 +154,8 @@ VALUES (?, ?, ?, 'PENDING', ?)`,
 
 res.json({
 message: "Booking berhasil dibuat",
-bookingId: result.insertId,
-expired_at: expiredAt
+bookingId: result.insertId
 });
-
-} catch {
-res.status(500).json({ message: "Server error" });
-}
-});
-
-// ================= PAYMENT =================
-app.post("/bookings/:id/pay", verifyToken, async (req, res) => {
-try {
-const bookingId = req.params.id;
-
-const [results] = await db.query(
-"SELECT * FROM bookings WHERE id = ?",
-[bookingId]
-);
-
-if (results.length === 0)
-return res.status(404).json({ message: "Booking tidak ditemukan" });
-
-const booking = results[0];
-
-if (booking.status === "PAID")
-return res.status(400).json({ message: "Sudah dibayar" });
-
-if (booking.expired_at && new Date(booking.expired_at) < new Date()) {
-await db.query(
-"UPDATE bookings SET status = 'EXPIRED' WHERE id = ?",
-[bookingId]
-);
-return res.status(400).json({ message: "Booking sudah expired" });
-}
-
-await db.query(
-"UPDATE bookings SET status = 'PAID', paid_at = NOW() WHERE id = ?",
-[bookingId]
-);
-
-res.json({ message: "Pembayaran berhasil (simulasi)" });
-
 } catch {
 res.status(500).json({ message: "Server error" });
 }
