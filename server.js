@@ -18,7 +18,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ================= ROUTE UTAMA =================
 app.get("/", (req, res) => {
-res.send("Server Bus Booking Berjalan 🚀");
+res.status(200).json({
+    status: "ok",
+    message: "Bus Booking API running"
+  });  
 });
 
 // ================= REGISTER =================
