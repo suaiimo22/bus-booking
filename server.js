@@ -17,27 +17,15 @@ app.get("/", (req, res) => {
 res.json({ status: "ok", message: "Bus Booking API running" });
 });
 
-
 /* ================= AUTO MIGRATION ================= */
 async function autoMigrate() {
 try {
-await db.query(`
-ALTER TABLE schedules
-ADD COLUMN departure_time DATETIME NULL
-`).catch(() => {});
-
-await db.query(`
-ALTER TABLE schedules
-ADD COLUMN arrival_time DATETIME NULL
-`).catch(() => {});
-
+await db.query(`ALTER TABLE schedules ADD COLUMN departure_time DATETIME NULL`).catch(()=>{});
+await db.query(`ALTER TABLE schedules ADD COLUMN arrival_time DATETIME NULL`).catch(()=>{});
 console.log("Migration checked ✅");
-} catch (err) {
-console.log("Migration skipped");
-}
+} catch {}
 }
 autoMigrate();
-
 
 /* ================= REGISTER ================= */
 app.post("/register", async (req, res) => {
@@ -55,12 +43,10 @@ await db.query(
 );
 
 res.json({ message: "Register berhasil" });
-
-} catch (err) {
+} catch {
 res.status(500).json({ message: "Email sudah terdaftar" });
 }
 });
-
 
 /* ================= LOGIN ================= */
 app.post("/login", async (req, res) => {
@@ -88,28 +74,20 @@ process.env.SECRET_KEY,
 );
 
 res.json({ message: "Login berhasil", token });
-
-} catch (err) {
+} catch {
 res.status(500).json({ message: "Server error" });
 }
 });
 
-
-/* ================= FORCE ADMIN (AUTO) ================= */
+/* ================= FORCE ADMIN ================= */
 app.get("/make-admin", async (req, res) => {
-try {
 await db.query(`
 UPDATE users
 SET role = 'admin'
 WHERE email = 'admin@email.com'
 `);
-
 res.send("User upgraded to admin ✅");
-} catch (err) {
-res.status(500).json(err);
-}
 });
-
 
 /* ================= GET SCHEDULES ================= */
 app.get("/schedules", async (req, res) => {
@@ -131,15 +109,10 @@ ORDER BY s.id DESC
 `);
 
 res.json(results);
-
 } catch (err) {
-res.status(500).json({
-message: "Query schedules gagal",
-error: err.message
-});
+res.status(500).json({ message: "Query schedules gagal", error: err.message });
 }
 });
-
 
 /* ================= ADMIN CREATE SCHEDULE ================= */
 app.post("/admin/schedules", verifyToken, async (req, res) => {
@@ -147,16 +120,7 @@ try {
 if (req.user.role !== "admin")
 return res.status(403).json({ message: "Akses admin saja" });
 
-const {
-bus_id,
-route_id,
-price,
-departure_time,
-arrival_time
-} = req.body;
-
-if (!bus_id || !route_id || !price || !departure_time || !arrival_time)
-return res.status(400).json({ message: "Semua field wajib diisi" });
+const { bus_id, route_id, price, departure_time, arrival_time } = req.body;
 
 const [result] = await db.query(`
 INSERT INTO schedules
@@ -164,16 +128,11 @@ INSERT INTO schedules
 VALUES (?, ?, ?, ?, ?)
 `, [bus_id, route_id, price, departure_time, arrival_time]);
 
-res.json({
-message: "Schedule berhasil dibuat",
-scheduleId: result.insertId
-});
-
-} catch (err) {
+res.json({ message: "Schedule berhasil dibuat", scheduleId: result.insertId });
+} catch {
 res.status(500).json({ message: "Server error" });
 }
 });
-
 
 /* ================= BOOKING ================= */
 app.post("/bookings", verifyToken, async (req, res) => {
@@ -200,16 +159,55 @@ INSERT INTO bookings
 VALUES (?, ?, ?, 'PENDING', ?)
 `, [user_id, schedule_id, seat_number, expiredAt]);
 
-res.json({
-message: "Booking berhasil dibuat",
-bookingId: result.insertId
-});
-
-} catch (err) {
+res.json({ message: "Booking berhasil dibuat", bookingId: result.insertId });
+} catch {
 res.status(500).json({ message: "Server error" });
 }
 });
 
+/* ================= ADMIN DASHBOARD ANALYTICS ================= */
+app.get("/admin/dashboard", verifyToken, async (req, res) => {
+try {
+if (req.user.role !== "admin")
+return res.status(403).json({ message: "Akses admin saja" });
+
+const [[revenue]] = await db.query(`
+SELECT SUM(s.price) as total_revenue
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.id
+WHERE b.status = 'PAID'
+`);
+
+const [[paid]] = await db.query(`SELECT COUNT(*) as total_paid FROM bookings WHERE status='PAID'`);
+const [[pending]] = await db.query(`SELECT COUNT(*) as total_pending FROM bookings WHERE status='PENDING'`);
+const [[expired]] = await db.query(`SELECT COUNT(*) as total_expired FROM bookings WHERE status='EXPIRED'`);
+
+const [occupancy] = await db.query(`
+SELECT
+s.id as schedule_id,
+b.name as bus_name,
+b.total_seats,
+COUNT(book.id) as seats_sold,
+ROUND((COUNT(book.id)/b.total_seats)*100,2) as occupancy_percent
+FROM schedules s
+JOIN buses b ON s.bus_id = b.id
+LEFT JOIN bookings book
+ON book.schedule_id = s.id AND book.status='PAID'
+GROUP BY s.id
+`);
+
+res.json({
+revenue: revenue.total_revenue || 0,
+total_paid: paid.total_paid,
+total_pending: pending.total_pending,
+total_expired: expired.total_expired,
+occupancy
+});
+
+} catch (err) {
+res.status(500).json({ message: "Dashboard error", error: err.message });
+}
+});
 
 /* ================= AUTO EXPIRE ================= */
 startExpireJob();
