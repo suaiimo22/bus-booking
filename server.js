@@ -18,10 +18,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // ================= ROUTE UTAMA =================
 app.get("/", (req, res) => {
-res.status(200).json({
-    status: "ok",
-    message: "Bus Booking API running"
-  });  
+res.json({
+status: "ok",
+message: "Bus Booking API running"
+});
 });
 
 // ================= REGISTER =================
@@ -45,7 +45,6 @@ await db.query(
 res.json({ message: "Register berhasil" });
 
 } catch (error) {
-console.error("REGISTER ERROR:", error);
 res.status(500).json({
 message: "Email sudah terdaftar atau server error"
 });
@@ -86,7 +85,6 @@ token
 });
 
 } catch (error) {
-console.error("LOGIN ERROR:", error);
 res.status(500).json({ message: "Server error" });
 }
 });
@@ -97,7 +95,6 @@ try {
 const [results] = await db.query("SELECT * FROM schedules");
 res.json(results);
 } catch (error) {
-console.error("SCHEDULE ERROR:", error);
 res.status(500).json({ message: "Gagal ambil data schedules" });
 }
 });
@@ -118,7 +115,8 @@ const [seatCheck] = await db.query(
 `SELECT * FROM bookings
 WHERE schedule_id = ?
 AND seat_number = ?
-AND status IN ('PENDING','PAID')`,
+AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at > NOW())`,
 [schedule_id, seat_number]
 );
 
@@ -142,7 +140,6 @@ expired_at: expiredAt
 });
 
 } catch (error) {
-console.error("BOOKING ERROR:", error);
 res.status(500).json({ message: "Server error" });
 }
 });
@@ -163,28 +160,35 @@ return res.status(404).json({ message: "Booking tidak ditemukan" });
 
 const booking = results[0];
 
-if (booking.status === "EXPIRED") {
-return res.status(400).json({ message: "Booking sudah expired" });
-}
-
 if (booking.status === "PAID") {
 return res.status(400).json({ message: "Sudah dibayar" });
 }
 
+if (booking.status === "CANCELLED") {
+return res.status(400).json({ message: "Booking sudah dibatalkan" });
+}
+
+if (booking.expired_at && new Date(booking.expired_at) < new Date()) {
 await db.query(
-"UPDATE bookings SET status = 'PAID' WHERE id = ?",
+"UPDATE bookings SET status = 'EXPIRED' WHERE id = ?",
+[bookingId]
+);
+return res.status(400).json({ message: "Booking sudah expired" });
+}
+
+await db.query(
+"UPDATE bookings SET status = 'PAID', paid_at = NOW() WHERE id = ?",
 [bookingId]
 );
 
 res.json({ message: "Pembayaran berhasil (simulasi)" });
 
 } catch (error) {
-console.error("PAYMENT ERROR:", error);
 res.status(500).json({ message: "Server error" });
 }
 });
 
-// ================= DOWNLOAD E-TICKET =================
+// ================= DOWNLOAD TICKET =================
 app.get("/ticket/:id", verifyToken, async (req, res) => {
 try {
 const bookingId = req.params.id;
@@ -222,7 +226,6 @@ doc.pipe(res);
 
 doc.fontSize(20).text("E-TICKET BUS", { align: "center" });
 doc.moveDown();
-
 doc.fontSize(14).text(`Nama: ${booking.name}`);
 doc.text(`Rute: ${booking.origin} → ${booking.destination}`);
 doc.text(`Seat: ${booking.seat_number}`);
@@ -233,7 +236,6 @@ doc.text(`Status: ${booking.status}`);
 doc.end();
 
 } catch (error) {
-console.error("TICKET ERROR:", error);
 res.status(500).json({ message: "Server error" });
 }
 });
@@ -261,7 +263,6 @@ ORDER BY bookings.created_at DESC
 res.json(results);
 
 } catch (error) {
-console.error("ADMIN ERROR:", error);
 res.status(500).json({
 message: "Gagal ambil data booking"
 });
@@ -269,9 +270,7 @@ message: "Gagal ambil data booking"
 });
 
 // ================= AUTO EXPIRE =================
-// startExpireJob();
-
-
+startExpireJob();
 
 // ================= START SERVER =================
 const PORT = process.env.PORT;
