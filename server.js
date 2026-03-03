@@ -22,16 +22,6 @@ app.get("/", (req, res) => {
 res.json({ status: "ok", message: "Bus Booking API running 🚀" });
 });
 
-/* ================= AUTO MIGRATION ================= */
-async function autoMigrate() {
-try {
-await db.query(`ALTER TABLE schedules ADD COLUMN departure_time DATETIME NULL`).catch(()=>{});
-await db.query(`ALTER TABLE schedules ADD COLUMN arrival_time DATETIME NULL`).catch(()=>{});
-console.log("Migration checked ✅");
-} catch {}
-}
-autoMigrate();
-
 /* ================= REGISTER ================= */
 app.post("/register", async (req, res) => {
 try {
@@ -92,20 +82,6 @@ res.status(500).json({ message: "Server error", error: err.message });
 }
 });
 
-/* ================= FORCE ADMIN (DEV ONLY) ================= */
-app.get("/make-admin", async (req, res) => {
-if (process.env.NODE_ENV !== "development")
-return res.status(403).send("Not allowed");
-
-await db.query(`
-UPDATE users
-SET role = 'admin'
-WHERE email = 'admin@email.com'
-`);
-
-res.send("User upgraded to admin ✅");
-});
-
 /* ================= GET SCHEDULES ================= */
 app.get("/schedules", async (req, res) => {
 try {
@@ -128,26 +104,6 @@ ORDER BY s.id DESC
 res.json(results);
 } catch (err) {
 res.status(500).json({ message: "Query schedules gagal", error: err.message });
-}
-});
-
-/* ================= ADMIN CREATE SCHEDULE ================= */
-app.post("/admin/schedules", verifyToken, async (req, res) => {
-try {
-if (req.user.role !== "admin")
-return res.status(403).json({ message: "Akses admin saja" });
-
-const { bus_id, route_id, price, departure_time, arrival_time } = req.body;
-
-const [result] = await db.query(`
-INSERT INTO schedules
-(bus_id, route_id, price, departure_time, arrival_time)
-VALUES (?, ?, ?, ?, ?)
-`, [bus_id, route_id, price, departure_time, arrival_time]);
-
-res.json({ message: "Schedule berhasil dibuat", scheduleId: result.insertId });
-} catch (err) {
-res.status(500).json({ message: "Server error", error: err.message });
 }
 });
 
@@ -179,6 +135,35 @@ VALUES (?, ?, ?, 'PENDING', ?)
 res.json({ message: "Booking berhasil dibuat", bookingId: result.insertId });
 } catch (err) {
 res.status(500).json({ message: "Server error", error: err.message });
+}
+});
+
+/* ================= MY BOOKINGS ================= */
+app.get("/my-bookings", verifyToken, async (req, res) => {
+try {
+const user_id = req.user.id;
+
+const [rows] = await db.query(`
+SELECT
+b.id,
+b.seat_number,
+b.status,
+b.expired_at,
+s.price,
+r.origin,
+r.destination,
+bus.name as bus_name
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.id
+JOIN routes r ON s.route_id = r.id
+JOIN buses bus ON s.bus_id = bus.id
+WHERE b.user_id = ?
+ORDER BY b.id DESC
+`, [user_id]);
+
+res.json(rows);
+} catch (err) {
+res.status(500).json({ message: "Error ambil booking", error: err.message });
 }
 });
 
