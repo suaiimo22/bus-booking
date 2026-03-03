@@ -2,209 +2,65 @@
 <html>
 <head>
 <title>Bus Booking</title>
-<style>
-body {
-font-family: Arial, sans-serif;
-margin: 0;
-background-color: #f4f6f9;
-}
-
-.navbar {
-background-color: #1e293b;
-color: white;
-padding: 15px;
-display: flex;
-justify-content: space-between;
-align-items: center;
-}
-
-.navbar button {
-padding: 6px 12px;
-border: none;
-cursor: pointer;
-border-radius: 4px;
-}
-
-.container {
-max-width: 900px;
-margin: 30px auto;
-padding: 20px;
-}
-
-.card {
-background: white;
-padding: 15px;
-margin-bottom: 15px;
-border-radius: 8px;
-box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-}
-
-.btn-primary {
-background-color: #2563eb;
-color: white;
-}
-
-.seat-grid {
-display: grid;
-grid-template-columns: repeat(4, 1fr);
-gap: 10px;
-max-width: 300px;
-margin-top: 20px;
-}
-
-.seat {
-padding: 12px;
-border-radius: 6px;
-border: none;
-cursor: pointer;
-color: white;
-}
-
-.available {
-background-color: #16a34a;
-}
-
-.booked {
-background-color: #dc2626;
-cursor: not-allowed;
-}
-
-.back-btn {
-margin-top: 20px;
-padding: 8px 12px;
-background-color: #64748b;
-color: white;
-border: none;
-border-radius: 4px;
-}
-</style>
 </head>
 <body>
 
-<div class="navbar">
-<div><strong>🚌 Bus Booking</strong></div>
-<div>
-<button onclick="goToMyBookings()">My Bookings</button>
-<button onclick="logout()">Logout</button>
-</div>
-</div>
-
-<div class="container">
 <h2>Available Schedules</h2>
-<div id="schedules"></div>
-</div>
+
+<div id="scheduleList"></div>
 
 <script>
 const token = localStorage.getItem("token");
 
 if (!token) {
-window.location.href = "login.html";
+window.location.href = "/login.html";
 }
 
-let selectedScheduleId = null;
+async function loadSchedules() {
+const res = await fetch("/schedules");
+const data = await res.json();
 
-function loadSchedules() {
-fetch("/schedules", {
-headers: {
-"Authorization": "Bearer " + token
-}
-})
-.then(res => res.json())
-.then(data => {
-const container = document.getElementById("schedules");
+const container = document.getElementById("scheduleList");
 container.innerHTML = "";
 
-data.forEach(schedule => {
-container.innerHTML += `
-<div class="card">
-<h3>${schedule.origin} → ${schedule.destination}</h3>
-<p>Price: Rp ${schedule.price}</p>
-<button class="btn-primary"
-onclick="showSeatSelection(${schedule.id})">
-Select Seat
-</button>
-</div>
-`;
-});
-});
-}
+data.forEach(s => {
+const div = document.createElement("div");
+div.style.border = "1px solid #ccc";
+div.style.padding = "10px";
+div.style.marginBottom = "10px";
 
-loadSchedules();
-
-function showSeatSelection(scheduleId) {
-selectedScheduleId = scheduleId;
-
-fetch("/bookings/seats/" + scheduleId, {
-headers: {
-"Authorization": "Bearer " + token
-}
-})
-.then(res => res.json())
-.then(bookedSeats => {
-
-const seats = [
-"A1","A2","A3","A4",
-"B1","B2","B3","B4"
-];
-
-let html = `
-<div class="card">
-<h3>Select Seat</h3>
-<div class="seat-grid">
+div.innerHTML = `
+<p><b>${s.origin} → ${s.destination}</b></p>
+<p>Price: Rp ${s.price}</p>
+<button onclick="bookSeat(${s.id})">Select Seat</button>
 `;
 
-seats.forEach(seat => {
-const isBooked = bookedSeats.includes(seat);
-
-html += `
-<button
-class="seat ${isBooked ? 'booked' : 'available'}"
-${isBooked ? "disabled" : ""}
-onclick="bookSeat('${seat}')">
-${seat}
-</button>
-`;
-});
-
-html += `
-</div>
-<button class="back-btn" onclick="loadSchedules()">Back</button>
-</div>
-`;
-
-document.getElementById("schedules").innerHTML = html;
+container.appendChild(div);
 });
 }
 
-function bookSeat(seatNumber) {
-fetch("/bookings", {
+async function bookSeat(scheduleId) {
+const seat = prompt("Masukkan nomor seat:");
+
+if (!seat) return;
+
+const res = await fetch("/bookings", {
 method: "POST",
 headers: {
 "Content-Type": "application/json",
-"Authorization": "Bearer " + token
+Authorization: "Bearer " + token
 },
 body: JSON.stringify({
-schedule_id: selectedScheduleId,
-seat_number: seatNumber
+schedule_id: scheduleId,
+seat_number: seat
 })
-})
-.then(res => res.json())
-.then(data => {
-alert(data.message);
-if (data.bookingId) {
-window.location.href = "my-bookings.html";
-}
 });
+
+const data = await res.json();
+alert(data.message);
 }
 
-function goToMyBookings() {
-window.location.href = "my-bookings.html";
-}
-
-function logout() {
-localStorage.removeItem("token");
-window.location.href = "login.html";
-}
+loadSchedules();
 </script>
 
 </body>
