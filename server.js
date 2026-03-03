@@ -13,12 +13,16 @@ const db = require("./db");
 const verifyToken = require("./middleware/verifyToken");
 const startExpireJob = require("./services/expireService");
 
+/* ====== TAMBAHAN PENTING ====== */
+const adminRoutes = require("./routes/adminRoutes");
+/* =============================== */
+
 app.use(
-    helmet({
-        contentSecurityPolicy: false
-    })
+helmet({
+contentSecurityPolicy: false
+})
 );
-    
+
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -204,67 +208,9 @@ res.status(500).json({ message: "Payment error", error: err.message });
 }
 });
 
-/* ================= DOWNLOAD TICKET ================= */
-app.get("/ticket/:id", verifyToken, async (req, res) => {
-try {
-const bookingId = req.params.id;
-
-const [rows] = await db.query(`
-SELECT
-b.id as booking_id,
-b.seat_number,
-b.status,
-b.user_id,
-u.name as passenger_name,
-s.departure_time,
-s.arrival_time,
-s.price,
-r.origin,
-r.destination,
-bus.name as bus_name
-FROM bookings b
-JOIN users u ON b.user_id = u.id
-JOIN schedules s ON b.schedule_id = s.id
-JOIN routes r ON s.route_id = r.id
-JOIN buses bus ON s.bus_id = bus.id
-WHERE b.id = ?
-`, [bookingId]);
-
-if (!rows.length)
-return res.status(404).json({ message: "Booking tidak ditemukan" });
-
-const data = rows[0];
-
-if (data.user_id !== req.user.id)
-return res.status(403).json({ message: "Bukan tiket milik Anda" });
-
-if (data.status !== "PAID")
-return res.status(400).json({ message: "Tiket belum dibayar" });
-
-res.setHeader("Content-Type", "application/pdf");
-res.setHeader("Content-Disposition", `attachment; filename=ticket-${bookingId}.pdf`);
-
-const doc = new PDFDocument({ margin: 50 });
-doc.pipe(res);
-
-doc.fontSize(22).text("BUS BOOKING E-TICKET", { align: "center" });
-doc.moveDown();
-doc.fontSize(14).text(`Booking ID: ${data.booking_id}`);
-doc.text(`Nama Penumpang: ${data.passenger_name}`);
-doc.text(`Bus: ${data.bus_name}`);
-doc.text(`Rute: ${data.origin} → ${data.destination}`);
-doc.text(`Seat: ${data.seat_number}`);
-doc.text(`Harga: Rp ${data.price}`);
-doc.text(`Departure: ${data.departure_time}`);
-doc.text(`Arrival: ${data.arrival_time}`);
-doc.moveDown();
-doc.text("Status: PAID", { align: "right" });
-
-doc.end();
-} catch (err) {
-res.status(500).json({ message: "Ticket error", error: err.message });
-}
-});
+/* ====== MOUNT ADMIN ROUTES (INI YANG TADI KURANG) ====== */
+app.use(adminRoutes);
+/* ======================================================= */
 
 /* ================= AUTO EXPIRE ================= */
 startExpireJob();
