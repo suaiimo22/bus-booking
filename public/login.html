@@ -8,44 +8,46 @@ body {
 margin: 0;
 background: #121212;
 font-family: Arial, sans-serif;
-display: flex;
-justify-content: center;
-align-items: center;
-height: 100vh;
 color: white;
 }
 
-.login-container {
+.wrapper {
+width: 100%;
+height: 100vh;
+display: flex;
+justify-content: center;
+align-items: center;
+}
+
+.login-box {
 background: #1e1e1e;
-padding: 40px;
-border-radius: 12px;
+padding: 30px;
+border-radius: 10px;
 width: 320px;
-box-shadow: 0 0 20px rgba(0,0,0,0.5);
+text-align: center;
 }
 
 h2 {
-text-align: center;
-margin-bottom: 25px;
 color: #00c3ff;
+margin-bottom: 20px;
 }
 
 input {
 width: 100%;
-padding: 12px;
+padding: 10px;
 margin-bottom: 15px;
-border-radius: 6px;
 border: none;
-outline: none;
+border-radius: 5px;
 }
 
 button {
 width: 100%;
-padding: 12px;
-border: none;
-border-radius: 6px;
+padding: 10px;
 background: #00c3ff;
-font-weight: bold;
+border: none;
+border-radius: 5px;
 cursor: pointer;
+font-weight: bold;
 }
 
 button:hover {
@@ -53,16 +55,16 @@ opacity: 0.9;
 }
 
 #message {
-text-align: center;
-margin-top: 15px;
-color: #ff4d4d;
+margin-top: 10px;
+color: red;
 }
 </style>
 </head>
 
 <body>
 
-<div class="login-container">
+<div class="wrapper">
+<div class="login-box">
 <h2>Login</h2>
 
 <form id="loginForm">
@@ -72,6 +74,7 @@ color: #ff4d4d;
 </form>
 
 <p id="message"></p>
+</div>
 </div>
 
 <script>
@@ -97,7 +100,6 @@ const data = await response.json();
 if (response.ok && data.token) {
 localStorage.setItem("token", data.token);
 
-// Decode token untuk cek role
 const payload = JSON.parse(atob(data.token.split(".")[1]));
 
 if (payload.role === "admin") {
@@ -113,7 +115,7 @@ data.message || "Login gagal";
 
 } catch (error) {
 document.getElementById("message").innerText =
-"Server error. Coba lagi.";
+"Server error";
 }
 });
 </script>
