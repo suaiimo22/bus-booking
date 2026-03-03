@@ -18,7 +18,29 @@ res.json({ status: "ok", message: "Bus Booking API running" });
 });
 
 
-// ================= REGISTER =================
+/* ================= AUTO MIGRATION ================= */
+async function autoMigrate() {
+try {
+await db.query(`
+ALTER TABLE schedules
+ADD COLUMN departure_time DATETIME NULL
+`).catch(() => {});
+
+await db.query(`
+ALTER TABLE schedules
+ADD COLUMN arrival_time DATETIME NULL
+`).catch(() => {});
+
+console.log("Migration schedules checked ✅");
+} catch (err) {
+console.log("Migration skipped");
+}
+}
+
+autoMigrate();
+
+
+/* ================= REGISTER ================= */
 app.post("/register", async (req, res) => {
 try {
 const { name, email, user_password } = req.body;
@@ -41,7 +63,7 @@ res.status(500).json({ message: "Email sudah terdaftar" });
 });
 
 
-// ================= LOGIN =================
+/* ================= LOGIN ================= */
 app.post("/login", async (req, res) => {
 try {
 const { email, password } = req.body;
@@ -75,7 +97,7 @@ res.status(500).json({ message: "Server error" });
 });
 
 
-// ================= GET SCHEDULES =================
+/* ================= GET SCHEDULES ================= */
 app.get("/schedules", async (req, res) => {
 try {
 const [results] = await db.query(`
@@ -91,7 +113,7 @@ b.total_seats
 FROM schedules s
 LEFT JOIN buses b ON s.bus_id = b.id
 LEFT JOIN routes r ON s.route_id = r.id
-ORDER BY s.departure_time ASC
+ORDER BY s.id DESC
 `);
 
 res.json(results);
@@ -105,7 +127,7 @@ error: err.message
 });
 
 
-// ================= ADMIN CREATE SCHEDULE =================
+/* ================= ADMIN CREATE SCHEDULE ================= */
 app.post("/admin/schedules", verifyToken, async (req, res) => {
 try {
 
@@ -140,43 +162,7 @@ res.status(500).json({ message: "Server error" });
 });
 
 
-// ================= GET SEATS =================
-app.get("/seats/:scheduleId", async (req, res) => {
-try {
-const scheduleId = req.params.scheduleId;
-
-const [scheduleData] = await db.query(`
-SELECT b.total_seats
-FROM schedules s
-LEFT JOIN buses b ON s.bus_id = b.id
-WHERE s.id = ?
-`, [scheduleId]);
-
-if (!scheduleData.length)
-return res.status(404).json({ message: "Schedule tidak ditemukan" });
-
-const totalSeats = scheduleData[0].total_seats || 40;
-
-const [bookedSeats] = await db.query(`
-SELECT seat_number
-FROM bookings
-WHERE schedule_id = ?
-AND status IN ('PENDING','PAID')
-AND (expired_at IS NULL OR expired_at > NOW())
-`, [scheduleId]);
-
-res.json({
-total_seats: totalSeats,
-booked: bookedSeats
-});
-
-} catch (err) {
-res.status(500).json({ message: "Server error" });
-}
-});
-
-
-// ================= BOOKING =================
+/* ================= BOOKING ================= */
 app.post("/bookings", verifyToken, async (req, res) => {
 try {
 const { schedule_id, seat_number } = req.body;
@@ -212,7 +198,7 @@ res.status(500).json({ message: "Server error" });
 });
 
 
-// ================= AUTO EXPIRE =================
+/* ================= AUTO EXPIRE ================= */
 startExpireJob();
 
 const PORT = process.env.PORT;
