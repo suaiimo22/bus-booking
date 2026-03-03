@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Admin Dashboard</title>
+<link rel="stylesheet" href="admin-dashboard.css">
+</head>
+<body>
+
+<div class="sidebar">
+<h2>ADMIN PANEL</h2>
+<button onclick="logout()">Logout</button>
+</div>
+
+<div class="main">
+<h1>Dashboard</h1>
+
+<div class="cards">
+<div class="card">
+<h3>Total Revenue</h3>
+<p id="totalRevenue">Rp 0</p>
+</div>
+
+<div class="card">
+<h3>Total Bookings</h3>
+<p id="totalBookings">0</p>
+</div>
+
+<div class="card">
+<h3>Active Bookings</h3>
+<p id="activeBookings">0</p>
+</div>
+
+<div class="card">
+<h3>Occupancy</h3>
+<p id="occupancy">0%</p>
+</div>
+</div>
+
+<h2>Recent Bookings</h2>
+<table>
+<thead>
+<tr>
+<th>User</th>
+<th>Route</th>
+<th>Seat</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody id="bookingTable"></tbody>
+</table>
+
+</div>
+
+<script src="admin-dashboard.js"></script>
+</body>
+</html>
