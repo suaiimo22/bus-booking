@@ -4,26 +4,18 @@ const db = require("../db");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
 
-/* ======================================================
-ADMIN - DASHBOARD SUMMARY
-====================================================== */
-router.get("/admin/dashboard", verifyToken, verifyAdmin, (req, res) => {
-
-const sql = `
+/* ================= ADMIN DASHBOARD ================= */
+router.get("/admin/dashboard", verifyToken, verifyAdmin, async (req, res) => {
+try {
+const [result] = await db.query(`
 SELECT
 COUNT(*) AS totalBookings,
 SUM(CASE WHEN b.status = 'PENDING' THEN 1 ELSE 0 END) AS totalPending,
 SUM(CASE WHEN b.status = 'PAID' THEN 1 ELSE 0 END) AS totalPaid,
 SUM(CASE WHEN b.status = 'PAID' THEN s.price ELSE 0 END) AS totalRevenue
 FROM bookings b
-JOIN schedules s ON b.schedule_id = s.id
-`;
-
-db.query(sql, (err, result) => {
-if (err) {
-console.log(err);
-return res.status(500).json({ message: "Database error" });
-}
+LEFT JOIN schedules s ON b.schedule_id = s.id
+`);
 
 res.json({
 totalBookings: result[0].totalBookings || 0,
@@ -31,105 +23,99 @@ totalPending: result[0].totalPending || 0,
 totalPaid: result[0].totalPaid || 0,
 totalRevenue: result[0].totalRevenue || 0
 });
+
+} catch (err) {
+res.status(500).json({ message: "Dashboard error", error: err.message });
+}
 });
-});
 
-
-/* ======================================================
-ADMIN - GET ALL BOOKINGS
-====================================================== */
-router.get("/admin/bookings", verifyToken, verifyAdmin, (req, res) => {
-
-const sql = `
+/* ================= GET ALL SCHEDULES ================= */
+router.get("/admin/schedules", verifyToken, verifyAdmin, async (req, res) => {
+try {
+const [rows] = await db.query(`
 SELECT
-bookings.id,
-users.name,
-users.email,
-schedules.origin,
-schedules.destination,
-schedules.price,
-bookings.seat_number,
-bookings.status,
-bookings.created_at
-FROM bookings
-JOIN users ON bookings.user_id = users.id
-JOIN schedules ON bookings.schedule_id = schedules.id
-ORDER BY bookings.created_at DESC
-`;
+s.id,
+s.price,
+r.origin,
+r.destination,
+b.name AS bus_name
+FROM schedules s
+LEFT JOIN routes r ON s.route_id = r.id
+LEFT JOIN buses b ON s.bus_id = b.id
+ORDER BY s.id DESC
+`);
 
-db.query(sql, (err, results) => {
-if (err) {
-return res.status(500).json({
-message: "Gagal ambil data booking"
-});
+res.json(rows);
+
+} catch (err) {
+res.status(500).json({ message: "Error ambil schedules", error: err.message });
 }
-
-res.json(results);
-});
 });
 
-
-/* ======================================================
-ADMIN - GET ALL SCHEDULES (FOR MANAGE ROUTES)
-====================================================== */
-router.get("/admin/schedules", verifyToken, verifyAdmin, (req, res) => {
-
-db.query("SELECT * FROM schedules ORDER BY id DESC", (err, results) => {
-if (err) {
-return res.status(500).json({ message: "Database error" });
-}
-
-res.json(results);
-});
-});
-
-
-/* ======================================================
-ADMIN - UPDATE SCHEDULE (EDIT ROUTE & PRICE)
-====================================================== */
-router.put("/admin/schedules/:id", verifyToken, verifyAdmin, (req, res) => {
-
-const scheduleId = req.params.id;
+/* ================= UPDATE SCHEDULE ================= */
+router.put("/admin/schedules/:id", verifyToken, verifyAdmin, async (req, res) => {
+try {
+const id = req.params.id;
 const { origin, destination, bus_name, price } = req.body;
 
-const sql = `
+// update route
+await db.query(`
+UPDATE routes r
+JOIN schedules s ON s.route_id = r.id
+SET r.origin = ?, r.destination = ?
+WHERE s.id = ?
+`, [origin, destination, id]);
+
+// update bus
+await db.query(`
+UPDATE buses b
+JOIN schedules s ON s.bus_id = b.id
+SET b.name = ?
+WHERE s.id = ?
+`, [bus_name, id]);
+
+// update price
+await db.query(`
 UPDATE schedules
-SET origin = ?, destination = ?, bus_name = ?, price = ?
+SET price = ?
 WHERE id = ?
-`;
+`, [price, id]);
 
-db.query(sql, [origin, destination, bus_name, price, scheduleId], (err) => {
-if (err) {
-return res.status(500).json({ message: "Update error" });
+res.json({ message: "Schedule berhasil diupdate ✅" });
+
+} catch (err) {
+res.status(500).json({ message: "Update error", error: err.message });
 }
-
-res.json({ message: "Schedule berhasil diupdate" });
-});
 });
 
-/* ======================================================
-ADMIN - ADD NEW SCHEDULE
-====================================================== */
-router.post("/admin/schedules", verifyToken, verifyAdmin, (req, res) => {
-
+/* ================= ADD SCHEDULE ================= */
+router.post("/admin/schedules", verifyToken, verifyAdmin, async (req, res) => {
+try {
 const { origin, destination, bus_name, price } = req.body;
 
-if (!origin || !destination || !bus_name || !price) {
-return res.status(400).json({ message: "Semua field wajib diisi" });
+// insert route
+const [routeResult] = await db.query(
+"INSERT INTO routes (origin, destination) VALUES (?, ?)",
+[origin, destination]
+);
+
+// insert bus
+const [busResult] = await db.query(
+"INSERT INTO buses (name, total_seats) VALUES (?, 20)",
+[bus_name]
+);
+
+// insert schedule
+await db.query(
+"INSERT INTO schedules (route_id, bus_id, price) VALUES (?, ?, ?)",
+[routeResult.insertId, busResult.insertId, price]
+);
+
+res.json({ message: "Schedule berhasil ditambahkan ✅" });
+
+} catch (err) {
+res.status(500).json({ message: "Insert error", error: err.message });
 }
-
-const sql = `
-INSERT INTO schedules (origin, destination, bus_name, price)
-VALUES (?, ?, ?, ?)
-`;
-
-db.query(sql, [origin, destination, bus_name, price], (err) => {
-if (err) {
-return res.status(500).json({ message: "Gagal tambah schedule" });
-}
-
-res.json({ message: "Schedule berhasil ditambahkan" });
-});
 });
 
 module.exports = router;
