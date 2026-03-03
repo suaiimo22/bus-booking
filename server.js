@@ -12,67 +12,11 @@ const verifyAdmin = require("./middleware/verifyAdmin");
 const verifyToken = require("./middleware/verifyToken");
 const startExpireJob = require("./services/expireService");
 
-// ================= MIDDLEWARE =================
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-// ================= ROOT =================
 app.get("/", (req, res) => {
 res.json({ status: "ok", message: "Bus Booking API running" });
-});
-
-// ================= REGISTER =================
-app.post("/register", async (req, res) => {
-try {
-const { name, email, user_password } = req.body;
-
-if (!name || !email || !user_password)
-return res.status(400).json({ message: "Semua field wajib diisi" });
-
-const hashedPassword = await bcrypt.hash(user_password, 10);
-
-await db.query(
-"INSERT INTO users (name, email, password) VALUES (?, ?, ?)",
-[name, email, hashedPassword]
-);
-
-res.json({ message: "Register berhasil" });
-
-} catch {
-res.status(500).json({ message: "Email sudah terdaftar atau server error" });
-}
-});
-
-// ================= LOGIN =================
-app.post("/login", async (req, res) => {
-try {
-const { email, password } = req.body;
-
-const [results] = await db.query(
-"SELECT * FROM users WHERE email = ?",
-[email]
-);
-
-if (results.length === 0)
-return res.status(400).json({ message: "User tidak ditemukan" });
-
-const user = results[0];
-
-const isMatch = await bcrypt.compare(password, user.password);
-if (!isMatch)
-return res.status(400).json({ message: "Password salah" });
-
-const token = jwt.sign(
-{ id: user.id, email: user.email, role: user.role },
-process.env.SECRET_KEY,
-{ expiresIn: "1h" }
-);
-
-res.json({ message: "Login berhasil", token });
-
-} catch {
-res.status(500).json({ message: "Server error" });
-}
 });
 
 // ================= GET SCHEDULES =================
@@ -82,6 +26,7 @@ const [results] = await db.query(`
 SELECT
 schedules.id,
 buses.name AS bus_name,
+buses.total_seats,
 routes.origin,
 routes.destination,
 schedules.departure_time,
@@ -100,22 +45,35 @@ res.status(500).json({ message: "Gagal ambil schedules" });
 }
 });
 
-// ================= ADMIN CREATE SCHEDULE =================
-app.post("/admin/schedules", verifyToken, verifyAdmin, async (req, res) => {
+// ================= GET SEAT INFO =================
+app.get("/seats/:scheduleId", async (req, res) => {
 try {
-const { bus_id, route_id, departure_time, arrival_time, price } = req.body;
+const scheduleId = req.params.scheduleId;
 
-if (!bus_id || !route_id || !departure_time || !price)
-return res.status(400).json({ message: "Data tidak lengkap" });
+const [scheduleData] = await db.query(`
+SELECT buses.total_seats
+FROM schedules
+JOIN buses ON schedules.bus_id = buses.id
+WHERE schedules.id = ?
+`, [scheduleId]);
 
-await db.query(
-`INSERT INTO schedules
-(bus_id, route_id, departure_time, arrival_time, price)
-VALUES (?, ?, ?, ?, ?)`,
-[bus_id, route_id, departure_time, arrival_time, price]
-);
+if (scheduleData.length === 0)
+return res.status(404).json({ message: "Schedule tidak ditemukan" });
 
-res.json({ message: "Schedule berhasil dibuat" });
+const totalSeats = scheduleData[0].total_seats;
+
+const [bookedSeats] = await db.query(`
+SELECT seat_number, status
+FROM bookings
+WHERE schedule_id = ?
+AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at > NOW())
+`, [scheduleId]);
+
+res.json({
+total_seats: totalSeats,
+booked: bookedSeats
+});
 
 } catch {
 res.status(500).json({ message: "Server error" });
@@ -198,42 +156,47 @@ res.status(500).json({ message: "Server error" });
 }
 });
 
-// ================= DOWNLOAD TICKET =================
-app.get("/ticket/:id", verifyToken, async (req, res) => {
-try {
-const bookingId = req.params.id;
+// ================= ADMIN ANALYTICS =================
 
-const [results] = await db.query(`
-SELECT b.*, s.price, r.origin, r.destination, u.name
+// Total Revenue
+app.get("/admin/revenue", verifyToken, verifyAdmin, async (req, res) => {
+try {
+const [result] = await db.query(`
+SELECT SUM(s.price) AS total_revenue
 FROM bookings b
 JOIN schedules s ON b.schedule_id = s.id
-JOIN routes r ON s.route_id = r.id
-JOIN users u ON b.user_id = u.id
-WHERE b.id = ?
-`, [bookingId]);
+WHERE b.status = 'PAID'
+`);
 
-if (results.length === 0)
-return res.status(404).json({ message: "Booking tidak ditemukan" });
+res.json(result[0]);
 
-const booking = results[0];
+} catch {
+res.status(500).json({ message: "Server error" });
+}
+});
 
-if (booking.status !== "PAID")
-return res.status(400).json({ message: "Tiket hanya bisa diunduh jika PAID" });
+// Occupancy Rate per Schedule
+app.get("/admin/occupancy", verifyToken, verifyAdmin, async (req, res) => {
+try {
+const [result] = await db.query(`
+SELECT
+schedules.id,
+buses.name AS bus_name,
+routes.origin,
+routes.destination,
+buses.total_seats,
+COUNT(b.id) AS sold_seats,
+(COUNT(b.id) / buses.total_seats) * 100 AS occupancy_percent
+FROM schedules
+JOIN buses ON schedules.bus_id = buses.id
+JOIN routes ON schedules.route_id = routes.id
+LEFT JOIN bookings b
+ON b.schedule_id = schedules.id
+AND b.status = 'PAID'
+GROUP BY schedules.id
+`);
 
-const doc = new PDFDocument();
-
-res.setHeader("Content-Type", "application/pdf");
-res.setHeader("Content-Disposition", `attachment; filename=ticket-${booking.id}.pdf`);
-
-doc.pipe(res);
-doc.fontSize(20).text("E-TICKET BUS", { align: "center" });
-doc.moveDown();
-doc.fontSize(14).text(`Nama: ${booking.name}`);
-doc.text(`Rute: ${booking.origin} → ${booking.destination}`);
-doc.text(`Seat: ${booking.seat_number}`);
-doc.text(`Harga: Rp ${booking.price}`);
-doc.text(`Booking ID: ${booking.id}`);
-doc.end();
+res.json(result);
 
 } catch {
 res.status(500).json({ message: "Server error" });
@@ -243,7 +206,6 @@ res.status(500).json({ message: "Server error" });
 // ================= AUTO EXPIRE =================
 startExpireJob();
 
-// ================= START SERVER =================
 const PORT = process.env.PORT;
 app.listen(PORT, "0.0.0.0", () => {
 console.log("Server berjalan di port", PORT);
