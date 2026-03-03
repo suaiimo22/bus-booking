@@ -74,19 +74,25 @@ process.env.SECRET_KEY,
 );
 
 res.json({ message: "Login berhasil", token });
+
 } catch {
 res.status(500).json({ message: "Server error" });
 }
 });
 
-/* ================= FORCE ADMIN ================= */
+/* ================= FORCE ADMIN (sementara) ================= */
 app.get("/make-admin", async (req, res) => {
+try {
 await db.query(`
 UPDATE users
 SET role = 'admin'
 WHERE email = 'admin@email.com'
 `);
+
 res.send("User upgraded to admin ✅");
+} catch {
+res.status(500).send("Gagal upgrade admin");
+}
 });
 
 /* ================= GET SCHEDULES ================= */
@@ -129,6 +135,7 @@ VALUES (?, ?, ?, ?, ?)
 `, [bus_id, route_id, price, departure_time, arrival_time]);
 
 res.json({ message: "Schedule berhasil dibuat", scheduleId: result.insertId });
+
 } catch {
 res.status(500).json({ message: "Server error" });
 }
@@ -160,48 +167,68 @@ VALUES (?, ?, ?, 'PENDING', ?)
 `, [user_id, schedule_id, seat_number, expiredAt]);
 
 res.json({ message: "Booking berhasil dibuat", bookingId: result.insertId });
+
 } catch {
 res.status(500).json({ message: "Server error" });
 }
 });
 
-/* ================= ADMIN DASHBOARD ANALYTICS ================= */
+/* ================= ADMIN DASHBOARD ================= */
 app.get("/admin/dashboard", verifyToken, async (req, res) => {
 try {
 if (req.user.role !== "admin")
 return res.status(403).json({ message: "Akses admin saja" });
 
 const [[revenue]] = await db.query(`
-SELECT SUM(s.price) as total_revenue
+SELECT SUM(s.price) as totalRevenue
 FROM bookings b
 JOIN schedules s ON b.schedule_id = s.id
 WHERE b.status = 'PAID'
 `);
 
-const [[paid]] = await db.query(`SELECT COUNT(*) as total_paid FROM bookings WHERE status='PAID'`);
-const [[pending]] = await db.query(`SELECT COUNT(*) as total_pending FROM bookings WHERE status='PENDING'`);
-const [[expired]] = await db.query(`SELECT COUNT(*) as total_expired FROM bookings WHERE status='EXPIRED'`);
+const [[totalBookings]] = await db.query(`
+SELECT COUNT(*) as totalBookings FROM bookings
+`);
 
-const [occupancy] = await db.query(`
+const [[activeBookings]] = await db.query(`
+SELECT COUNT(*) as activeBookings
+FROM bookings
+WHERE status IN ('PENDING','PAID')
+`);
+
+const [recentBookings] = await db.query(`
 SELECT
-s.id as schedule_id,
-b.name as bus_name,
-b.total_seats,
-COUNT(book.id) as seats_sold,
-ROUND((COUNT(book.id)/b.total_seats)*100,2) as occupancy_percent
-FROM schedules s
-JOIN buses b ON s.bus_id = b.id
-LEFT JOIN bookings book
-ON book.schedule_id = s.id AND book.status='PAID'
-GROUP BY s.id
+u.name,
+r.origin,
+r.destination,
+b.seat_number,
+b.status,
+b.created_at
+FROM bookings b
+JOIN users u ON b.user_id = u.id
+JOIN schedules s ON b.schedule_id = s.id
+JOIN routes r ON s.route_id = r.id
+ORDER BY b.id DESC
+LIMIT 5
+`);
+
+const [[occ]] = await db.query(`
+SELECT
+ROUND(
+(COUNT(b.id) / SUM(bus.total_seats)) * 100,
+2) as occupancy
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.id
+JOIN buses bus ON s.bus_id = bus.id
+WHERE b.status = 'PAID'
 `);
 
 res.json({
-revenue: revenue.total_revenue || 0,
-total_paid: paid.total_paid,
-total_pending: pending.total_pending,
-total_expired: expired.total_expired,
-occupancy
+totalRevenue: revenue.totalRevenue || 0,
+totalBookings: totalBookings.totalBookings,
+activeBookings: activeBookings.activeBookings,
+occupancy: occ.occupancy || 0,
+recentBookings
 });
 
 } catch (err) {
