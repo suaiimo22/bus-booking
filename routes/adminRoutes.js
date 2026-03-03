@@ -4,7 +4,40 @@ const db = require("../db");
 const verifyToken = require("../middleware/verifyToken");
 const verifyAdmin = require("../middleware/verifyAdmin");
 
-// ================= ADMIN - GET ALL BOOKINGS =================
+/* ======================================================
+ADMIN - DASHBOARD SUMMARY
+====================================================== */
+router.get("/admin/dashboard", verifyToken, verifyAdmin, (req, res) => {
+
+const sql = `
+SELECT
+COUNT(*) AS totalBookings,
+SUM(CASE WHEN b.status = 'PENDING' THEN 1 ELSE 0 END) AS totalPending,
+SUM(CASE WHEN b.status = 'PAID' THEN 1 ELSE 0 END) AS totalPaid,
+SUM(CASE WHEN b.status = 'PAID' THEN s.price ELSE 0 END) AS totalRevenue
+FROM bookings b
+JOIN schedules s ON b.schedule_id = s.id
+`;
+
+db.query(sql, (err, result) => {
+if (err) {
+console.log(err);
+return res.status(500).json({ message: "Database error" });
+}
+
+res.json({
+totalBookings: result[0].totalBookings || 0,
+totalPending: result[0].totalPending || 0,
+totalPaid: result[0].totalPaid || 0,
+totalRevenue: result[0].totalRevenue || 0
+});
+});
+});
+
+
+/* ======================================================
+ADMIN - GET ALL BOOKINGS
+====================================================== */
 router.get("/admin/bookings", verifyToken, verifyAdmin, (req, res) => {
 
 const sql = `
@@ -33,63 +66,46 @@ message: "Gagal ambil data booking"
 
 res.json(results);
 });
-
 });
 
-// ================= ADMIN DASHBOARD (BASIC TEST) =================
-// ================= ADMIN DASHBOARD (STEP 1) =================
-// ================= ADMIN DASHBOARD (STEP 2 FINAL FIX) =================
-router.get("/admin/dashboard", verifyToken, verifyAdmin, (req, res) => {
 
-const sql = `
-SELECT
-COUNT(*) AS totalBookings,
-SUM(CASE WHEN status = 'PENDING' THEN 1 ELSE 0 END) AS totalPending
-FROM bookings
-`;
+/* ======================================================
+ADMIN - GET ALL SCHEDULES (FOR MANAGE ROUTES)
+====================================================== */
+router.get("/admin/schedules", verifyToken, verifyAdmin, (req, res) => {
 
-db.query(sql, (err, result) => {
+db.query("SELECT * FROM schedules ORDER BY id DESC", (err, results) => {
 if (err) {
-console.log(err);
 return res.status(500).json({ message: "Database error" });
 }
 
-res.json({
-totalBookings: result[0].totalBookings,
-totalPending: result[0].totalPending || 0
+res.json(results);
 });
 });
 
-});
 
-// ================= ADMIN DASHBOARD (STEP 3) =================
-// ================= ADMIN DASHBOARD (STEP 4 - REVENUE) =================
-router.get("/admin/dashboard", verifyToken, verifyAdmin, (req, res) => {
+/* ======================================================
+ADMIN - UPDATE SCHEDULE (EDIT ROUTE & PRICE)
+====================================================== */
+router.put("/admin/schedules/:id", verifyToken, verifyAdmin, (req, res) => {
+
+const scheduleId = req.params.id;
+const { origin, destination, bus_name, price } = req.body;
 
 const sql = `
-SELECT
-COUNT(*) AS totalBookings,
-SUM(CASE WHEN b.status = 'PENDING' THEN 1 ELSE 0 END) AS totalPending,
-SUM(CASE WHEN b.status = 'PAID' THEN 1 ELSE 0 END) AS totalPaid,
-SUM(CASE WHEN b.status = 'PAID' THEN s.price ELSE 0 END) AS totalRevenue
-FROM bookings b
-JOIN schedules s ON b.schedule_id = s.id
+UPDATE schedules
+SET origin = ?, destination = ?, bus_name = ?, price = ?
+WHERE id = ?
 `;
 
-db.query(sql, (err, result) => {
+db.query(sql, [origin, destination, bus_name, price, scheduleId], (err) => {
 if (err) {
-console.log(err);
-return res.status(500).json({ message: "Database error" });
+return res.status(500).json({ message: "Update error" });
 }
 
-res.json({
-totalBookings: result[0].totalBookings || 0,
-totalPending: result[0].totalPending || 0,
-totalPaid: result[0].totalPaid || 0,
-totalRevenue: result[0].totalRevenue || 0
+res.json({ message: "Schedule berhasil diupdate" });
 });
 });
 
-});
 
 module.exports = router;
