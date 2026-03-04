@@ -214,7 +214,7 @@ app.use(adminRoutes);
 
 /* ================= GET BOOKED SEATS ================= */
 
-app.get("/seats/:scheduleId", async (req,res)=>{
+app.get("/bookings/seats/:scheduleId", async (req,res)=>{
 
 try{
 
