@@ -51,7 +51,7 @@ message:"Semua field wajib diisi"
 });
 }
 
-const [existing]=await db.query(`
+const [existing]=await db.query(
 "SELECT id FROM users WHERE email=?",
 [email]
 );
@@ -64,7 +64,7 @@ message:"Email sudah terdaftar"
 
 const hashed=await bcrypt.hash(user_password,10);
 
-await db.query(`
+await db.query(
 "INSERT INTO users (name,email,password,role) VALUES (?,?,?,'user')",
 [name,email,hashed]
 );
