@@ -45,20 +45,22 @@ try{
 
 const {name,email,user_password}=req.body;
 
-if(!name || !email || !user_password)
+if(!name || !email || !user_password){
 return res.status(400).json({
 message:"Semua field wajib diisi"
 });
+}
 
 const [existing]=await db.query(
 "SELECT id FROM users WHERE email=?",
 [email]
 );
 
-if(existing.length)
+if(existing.length){
 return res.status(400).json({
 message:"Email sudah terdaftar"
 });
+}
 
 const hashed=await bcrypt.hash(user_password,10);
 
@@ -93,19 +95,21 @@ const [rows]=await db.query(
 [email]
 );
 
-if(!rows.length)
+if(!rows.length){
 return res.status(400).json({
 message:"User tidak ditemukan"
 });
+}
 
 const user=rows[0];
 
 const match=await bcrypt.compare(password,user.password);
 
-if(!match)
+if(!match){
 return res.status(400).json({
 message:"Password salah"
 });
+}
 
 const token=jwt.sign(
 {
@@ -166,10 +170,11 @@ const user_id=req.user.id;
 
 const [seatCheck]=await db.query(SELECT * FROM bookings WHERE schedule_id=? AND seat_number=? AND status IN ('PENDING','PAID') AND (expired_at IS NULL OR expired_at>NOW()),[schedule_id,seat_number]);
 
-if(seatCheck.length)
+if(seatCheck.length){
 return res.status(400).json({
 message:"Seat sudah dibooking"
 });
+}
 
 const expiredAt=new Date(Date.now()+15601000);
 
@@ -227,22 +232,25 @@ const [rows]=await db.query(
 [bookingId]
 );
 
-if(!rows.length)
+if(!rows.length){
 return res.status(404).json({
 message:"Booking tidak ditemukan"
 });
+}
 
 const booking=rows[0];
 
-if(booking.user_id!==req.user.id)
+if(booking.user_id!==req.user.id){
 return res.status(403).json({
 message:"Bukan booking milik Anda"
 });
+}
 
-if(booking.status!=="PENDING")
+if(booking.status!=="PENDING"){
 return res.status(400).json({
 message:"Booking tidak bisa dibayar"
 });
+}
 
 await db.query(
 "UPDATE bookings SET status='PAID' WHERE id=?",
