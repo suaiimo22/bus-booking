@@ -244,9 +244,17 @@ error:err.message
 
 /* ================= DOWNLOAD TICKET PDF ================= */
 
-app.get("/ticket/:id", verifyToken, async (req,res)=>{
+app.get("/ticket/:id", async (req,res)=>{
+
+const token = req.query.token;
+
+if(!token){
+return res.status(401).json({message:"token tidak ada"});
+}
 
 try{
+
+jwt.verify(token, process.env.SECRET_KEY);    
 
 const bookingId = req.params.id;
 
