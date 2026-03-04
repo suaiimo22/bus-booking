@@ -2,20 +2,49 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Admin Dashboard</title>
+<title>Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
+
 body{
 background:#f4f6f9;
 font-family:'Segoe UI',sans-serif;
 }
 
-.navbar{
-background:linear-gradient(90deg,#0d6efd,#0b5ed7);
+.sidebar{
+width:230px;
+min-height:100vh;
+background:#111827;
+color:white;
+position:fixed;
+padding:20px;
+}
+
+.sidebar h4{
+margin-bottom:30px;
+}
+
+.sidebar a{
+display:block;
+color:#d1d5db;
+text-decoration:none;
+padding:10px;
+border-radius:6px;
+margin-bottom:5px;
+}
+
+.sidebar a:hover{
+background:#1f2937;
+color:white;
+}
+
+.main{
+margin-left:230px;
+padding:30px;
 }
 
 .card{
@@ -23,29 +52,32 @@ border:none;
 border-radius:12px;
 }
 
-.route-card{
-background:white;
-}
 </style>
 </head>
 
 <body>
 
-<nav class="navbar navbar-dark shadow-sm">
-<div class="container">
-<span class="navbar-brand fw-bold">
-<i class="bi bi-speedometer2"></i> Admin Dashboard
-</span>
+<div class="sidebar">
 
-<button onclick="logout()" class="btn btn-danger btn-sm">
+<h4><i class="bi bi-bus-front"></i> Bus Admin</h4>
+
+<a href="#"><i class="bi bi-speedometer2"></i> Dashboard</a>
+<a href="#"><i class="bi bi-map"></i> Schedules</a>
+<a href="#"><i class="bi bi-ticket"></i> Bookings</a>
+<a href="#"><i class="bi bi-graph-up"></i> Revenue</a>
+
+<hr>
+
+<button onclick="logout()" class="btn btn-danger w-100">
 Logout
 </button>
+
 </div>
-</nav>
 
-<div class="container mt-4">
+<div class="main">
 
-<!-- SUMMARY -->
+<h3 class="mb-4">Dashboard</h3>
+
 <div class="row mb-4">
 
 <div class="col-md-3">
@@ -78,17 +110,14 @@ Logout
 
 </div>
 
-<!-- MANAGE ROUTES -->
 <div class="card p-4">
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between mb-3">
 
-<h5>
-<i class="bi bi-map"></i> Manage Routes
-</h5>
+<h5>Manage Routes</h5>
 
 <button class="btn btn-primary btn-sm" onclick="openAddModal()">
-<i class="bi bi-plus-circle"></i> Add Route
+Add Route
 </button>
 
 </div>
@@ -124,7 +153,7 @@ Save Changes
 <div class="modal-dialog">
 <div class="modal-content p-4">
 
-<h5>Add New Schedule</h5>
+<h5>Add Schedule</h5>
 
 <input id="addOrigin" class="form-control mb-2" placeholder="Origin">
 <input id="addDestination" class="form-control mb-2" placeholder="Destination">
@@ -145,16 +174,13 @@ Add Schedule
 
 const token = localStorage.getItem("token");
 
-if(!token){
-window.location.href="/login.html";
-}
+if(!token) window.location.href="/login.html";
 
 let currentScheduleId=null;
 
 const editModal=new bootstrap.Modal(document.getElementById("editModal"));
 const addModal=new bootstrap.Modal(document.getElementById("addModal"));
 
-/* LOAD DASHBOARD */
 async function loadDashboard(){
 
 const res=await fetch("/admin/dashboard",{
@@ -170,8 +196,6 @@ document.getElementById("totalRevenue").innerText="Rp "+data.totalRevenue;
 
 }
 
-/* LOAD SCHEDULES */
-
 async function loadSchedules(){
 
 const res=await fetch("/admin/schedules",{
@@ -181,13 +205,14 @@ headers:{Authorization:"Bearer "+token}
 const data=await res.json();
 
 const container=document.getElementById("scheduleList");
+
 container.innerHTML="";
 
 data.forEach(s=>{
 
 container.innerHTML+=`
 
-<div class="route-card border rounded p-3 mb-3">
+<div class="border rounded p-3 mb-3">
 
 <h6>${s.origin} → ${s.destination}</h6>
 
@@ -212,8 +237,6 @@ Delete
 });
 
 }
-
-/* EDIT */
 
 function editSchedule(id,origin,destination,bus,price){
 
@@ -258,8 +281,6 @@ loadSchedules();
 
 }
 
-/* ADD */
-
 function openAddModal(){
 
 document.getElementById("addOrigin").value="";
@@ -301,19 +322,15 @@ loadSchedules();
 
 }
 
-/* DELETE */
-
 async function deleteSchedule(id){
 
-if(!confirm("Yakin ingin menghapus schedule ini?")) return;
+if(!confirm("Delete schedule ini?")) return;
 
 const res=await fetch(`/admin/schedules/${id}`,{
 
 method:"DELETE",
 
-headers:{
-Authorization:"Bearer "+token
-}
+headers:{Authorization:"Bearer "+token}
 
 });
 
@@ -324,8 +341,6 @@ alert(data.message);
 loadSchedules();
 
 }
-
-/* LOGOUT */
 
 function logout(){
 
