@@ -54,19 +54,36 @@ box-shadow:0 5px 15px rgba(0,0,0,0.2);
 
 <div class="search-box">
 
-<h4>Search Bus</h4>
+<h4 class="mb-4">Search Bus</h4>
 
-<div class="row">
+<div class="row g-3">
 
-<div class="col-md-4">
-<input id="origin" class="form-control" placeholder="From">
+<div class="col-md-3">
+<label>From</label>
+<input id="origin" class="form-control" placeholder="City">
 </div>
 
-<div class="col-md-4">
-<input id="destination" class="form-control" placeholder="To">
+<div class="col-md-3">
+<label>To</label>
+<input id="destination" class="form-control" placeholder="City">
 </div>
 
-<div class="col-md-4">
+<div class="col-md-2">
+<label>Date</label>
+<input id="date" type="date" class="form-control">
+</div>
+
+<div class="col-md-2">
+<label>Time</label>
+<input id="time" type="time" class="form-control">
+</div>
+
+<div class="col-md-1">
+<label>Passengers</label>
+<input id="passengers" type="number" min="1" value="1" class="form-control">
+</div>
+
+<div class="col-md-1 d-flex align-items-end">
 <button class="btn btn-success w-100" onclick="searchBus()">Search</button>
 </div>
 
@@ -80,10 +97,14 @@ box-shadow:0 5px 15px rgba(0,0,0,0.2);
 
 function searchBus(){
 
-const origin=document.getElementById("origin").value;
-const destination=document.getElementById("destination").value;
+const origin = document.getElementById("origin").value;
+const destination = document.getElementById("destination").value;
+const date = document.getElementById("date").value;
+const time = document.getElementById("time").value;
+const passengers = document.getElementById("passengers").value;
 
-window.location="schedules.html?origin="+origin+"&destination="+destination;
+window.location =
+`schedules.html?origin=${origin}&destination=${destination}&date=${date}&time=${time}&passengers=${passengers}`;
 
 }
 
