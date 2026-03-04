@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Select Seat</title>
+
+<style>
+
+body{
+font-family:Arial;
+text-align:center;
+}
+
+.seat-container{
+display:grid;
+grid-template-columns:repeat(5,60px);
+gap:10px;
+justify-content:center;
+margin-top:40px;
+}
+
+.seat{
+width:60px;
+height:60px;
+background:#4CAF50;
+color:white;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:6px;
+cursor:pointer;
+}
+
+.seat.booked{
+background:#e74c3c;
+cursor:not-allowed;
+}
+
+.seat.selected{
+background:#f1c40f;
+}
+
+.aisle{
+width:30px;
+}
+
+button{
+margin-top:30px;
+padding:10px 20px;
+font-size:16px;
+}
+
+.legend{
+margin-top:20px;
+}
+
+.legend span{
+display:inline-block;
+width:20px;
+height:20px;
+margin-right:5px;
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>Select Your Seat</h2>
+
+<div class="legend">
+<div><span style="background:#4CAF50"></span> Available</div>
+<div><span style="background:#e74c3c"></span> Booked</div>
+<div><span style="background:#f1c40f"></span> Selected</div>
+</div>
+
+<div id="seats" class="seat-container"></div>
+
+<button onclick="bookSeat()">Book Seat</button>
+
+<script>
+
+const urlParams=new URLSearchParams(window.location.search);
+const scheduleId=urlParams.get("schedule_id");
+
+let selectedSeat=null;
+
+async function loadSeats(){
+
+const res=await fetch(`/bookings/seats/${scheduleId}`);
+const bookedSeats=await res.json();
+
+const container=document.getElementById("seats");
+
+let seatNumber=1;
+
+for(let row=1;row<=10;row++){
+
+for(let col=1;col<=5;col++){
+
+if(col===3){
+
+const aisle=document.createElement("div");
+aisle.className="aisle";
+container.appendChild(aisle);
+continue;
+
+}
+
+const seat=document.createElement("div");
+seat.className="seat";
+
+seat.innerText=seatNumber;
+
+if(bookedSeats.includes(seatNumber)){
+seat.classList.add("booked");
+}else{
+
+seat.onclick=()=>{
+
+document.querySelectorAll(".seat").forEach(s=>{
+s.classList.remove("selected");
+});
+
+seat.classList.add("selected");
+selectedSeat=seatNumber;
+
+};
+
+}
+
+container.appendChild(seat);
+
+seatNumber++;
+
+}
+
+}
+
+}
+
+async function bookSeat(){
+
+if(!selectedSeat){
+alert("Pilih seat dulu");
+return;
+}
+
+const token=localStorage.getItem("token");
+
+const res=await fetch("/bookings",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer "+token
+},
+body:JSON.stringify({
+schedule_id:scheduleId,
+seat_number:selectedSeat
+})
+});
+
+const data=await res.json();
+
+alert(data.message);
+
+window.location.href="my-bookings.html";
+
+}
+
+loadSeats();
+
+</script>
+
+</body>
+</html>
