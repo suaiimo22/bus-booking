@@ -51,7 +51,7 @@ message:"Semua field wajib diisi"
 });
 }
 
-const [existing]=await db.query(
+const [existing]=await db.query(`
 "SELECT id FROM users WHERE email=?",
 [email]
 );
@@ -64,7 +64,7 @@ message:"Email sudah terdaftar"
 
 const hashed=await bcrypt.hash(user_password,10);
 
-await db.query(
+await db.query(`
 "INSERT INTO users (name,email,password,role) VALUES (?,?,?,'user')",
 [name,email,hashed]
 );
@@ -90,7 +90,7 @@ try{
 
 const {email,password}=req.body;
 
-const [rows]=await db.query(
+const [rows]=await db.query(`
 "SELECT * FROM users WHERE email=?",
 [email]
 );
@@ -228,7 +228,7 @@ try{
 
 const user_id=req.user.id;
 
-const [rows]=await db.query(SELECT b.id, b.seat_number, b.status, b.expired_at, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.user_id=? ORDER BY b.id DESC,[user_id]);
+const [rows]=await db.query(`SELECT b.id, b.seat_number, b.status, b.expired_at, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.user_id=? ORDER BY b.id DESC,[user_id]);
 
 res.json(rows);
 
@@ -251,7 +251,7 @@ try{
 
 const bookingId=req.params.id;
 
-const [rows]=await db.query(
+const [rows]=await db.query(`
 "SELECT * FROM bookings WHERE id=?",
 [bookingId]
 );
@@ -276,7 +276,7 @@ message:"Booking tidak bisa dibayar"
 });
 }
 
-await db.query(
+await db.query(`
 "UPDATE bookings SET status='PAID' WHERE id=?",
 [bookingId]
 );
@@ -304,7 +304,7 @@ try{
 
 const scheduleId=req.params.scheduleId;
 
-const [rows]=await db.query(SELECT seat_number FROM bookings WHERE schedule_id=? AND status IN ('PENDING','PAID'),[scheduleId]);
+const [rows]=await `db.query(`SELECT seat_number FROM bookings WHERE schedule_id=? AND status IN ('PENDING','PAID'),[scheduleId]);
 
 const seats=rows.map(r=>r.seat_number);
 
@@ -329,7 +329,7 @@ try{
 
 const bookingId=req.params.id;
 
-const [rows]=await db.query(SELECT b.id, b.seat_number, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.id=?,[bookingId]);
+const [rows]=await `db.query(`SELECT b.id, b.seat_number, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.id=?,[bookingId]);
 
 if(!rows.length){
 return res.status(404).json({message:"Ticket tidak ditemukan"});
