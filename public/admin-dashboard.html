@@ -165,6 +165,12 @@ container.innerHTML += `
 onclick="editSchedule(${s.id}, '${s.origin}', '${s.destination}', '${s.bus_name}', ${s.price})">
 Edit
 </button>
+
+<button class="btn btn-danger btn-sm"
+onclick="deleteSchedule(${s.id})">
+delete
+<button>
+
 </div>
 `;
 });
@@ -233,6 +239,25 @@ alert(data.message);
 
 addModal.hide();
 loadSchedules();
+}
+
+async function deleteSchedule(id) {
+
+if (!confirm("Yakin ingin menghapus schedule ini?")) return;
+
+const res = await fetch(`/admin/schedules/${id}`, {
+method: "DELETE",
+headers: {
+Authorization: "Bearer " + token
+}
+});
+
+const data = await res.json();
+
+alert(data.message);
+
+loadSchedules();
+
 }
 
 /* ===== LOGOUT ===== */
