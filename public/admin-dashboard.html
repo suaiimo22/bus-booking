@@ -8,6 +8,8 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <style>
 
 body{
@@ -110,6 +112,15 @@ Logout
 
 </div>
 
+<!-- REVENUE CHART -->
+<div class="card p-4 mb-4">
+
+<h5 class="mb-3">Revenue Chart</h5>
+
+<canvas id="revenueChart" height="100"></canvas>
+
+</div>
+
 <div class="card p-4">
 
 <div class="d-flex justify-content-between mb-3">
@@ -181,6 +192,8 @@ let currentScheduleId=null;
 const editModal=new bootstrap.Modal(document.getElementById("editModal"));
 const addModal=new bootstrap.Modal(document.getElementById("addModal"));
 
+/* DASHBOARD STATS */
+
 async function loadDashboard(){
 
 const res=await fetch("/admin/dashboard",{
@@ -195,6 +208,44 @@ document.getElementById("totalPaid").innerText=data.totalPaid;
 document.getElementById("totalRevenue").innerText="Rp "+data.totalRevenue;
 
 }
+
+/* REVENUE CHART */
+
+async function loadRevenueChart(){
+
+const res = await fetch("/admin/revenue",{
+headers:{Authorization:"Bearer "+token}
+});
+
+const data = await res.json();
+
+const labels = data.map(r => r.date);
+const revenues = data.map(r => r.revenue);
+
+const ctx = document.getElementById("revenueChart");
+
+new Chart(ctx,{
+type:"line",
+data:{
+labels:labels,
+datasets:[{
+label:"Daily Revenue",
+data:revenues,
+borderWidth:3,
+tension:0.3
+}]
+},
+options:{
+responsive:true,
+plugins:{
+legend:{display:true}
+}
+}
+});
+
+}
+
+/* LOAD SCHEDULE */
 
 async function loadSchedules(){
 
@@ -237,6 +288,8 @@ Delete
 });
 
 }
+
+/* EDIT */
 
 function editSchedule(id,origin,destination,bus,price){
 
@@ -281,6 +334,8 @@ loadSchedules();
 
 }
 
+/* ADD */
+
 function openAddModal(){
 
 document.getElementById("addOrigin").value="";
@@ -322,6 +377,8 @@ loadSchedules();
 
 }
 
+/* DELETE */
+
 async function deleteSchedule(id){
 
 if(!confirm("Delete schedule ini?")) return;
@@ -350,8 +407,11 @@ window.location.href="/login.html";
 
 }
 
+/* LOAD PAGE */
+
 loadDashboard();
 loadSchedules();
+loadRevenueChart();
 
 </script>
 
