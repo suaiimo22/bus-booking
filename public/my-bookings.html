@@ -61,7 +61,23 @@ headers: { Authorization: "Bearer " + token }
 
 const data = await res.json();
 const container = document.getElementById("bookingList");
-container.innerHTML = "";
+container.innerHTML+=`
+<div class="card p-3 mb-3">
+
+<h6>${b.origin} → ${b.destination}</h6>
+
+<p>Bus: ${b.bus_name}</p>
+
+<p>Seat: ${b.seat_number}</p>
+
+<p>Status: ${b.status}</p>
+
+<button onclick="downloadTicket(${b.id})" class="btn btn-success btn-sm">
+Download Ticket
+</button>
+
+</div>
+`;
 
 if (!data.length) {
 container.innerHTML = "<p>Tidak ada booking</p>";
@@ -117,16 +133,31 @@ headers: { Authorization: "Bearer " + token }
 loadBookings();
 }
 
-async function downloadTicket(id) {
-const response = await fetch("/ticket/" + id, {
-headers: { Authorization: "Bearer " + token }
+async function downloadTicket(id){
+
+const token = localStorage.getItem("token");
+
+const res = await fetch(`/ticket/${id}`,{
+headers:{
+Authorization:"Bearer " + token
+}
 });
-const blob = await response.blob();
+
+const blob = await res.blob();
+
 const url = window.URL.createObjectURL(blob);
+
 const a = document.createElement("a");
+
 a.href = url;
 a.download = "ticket.pdf";
+
+document.body.appendChild(a);
+
 a.click();
+
+a.remove();
+
 }
 
 function logout() {

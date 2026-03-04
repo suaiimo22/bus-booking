@@ -244,7 +244,7 @@ error:err.message
 
 /* ================= DOWNLOAD TICKET PDF ================= */
 
-app.get("/ticket/:id", async (req,res)=>{
+app.get("/ticket/:id", verifyToken, async (req,res)=>{
 
 const token = req.query.token;
 
