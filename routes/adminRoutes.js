@@ -118,4 +118,26 @@ res.status(500).json({ message: "Insert error", error: err.message });
 }
 });
 
+// ================= DELETE SCHEDULE =================
+router.delete("/admin/schedules/:id", verifyToken, verifyAdmin, async (req, res) => {
+
+try {
+
+const id = req.params.id;
+
+await db.query("DELETE FROM schedules WHERE id = ?", [id]);
+
+res.json({ message: "Schedule berhasil dihapus 🗑️" });
+
+} catch (err) {
+
+res.status(500).json({
+message: "Delete error",
+error: err.message
+});
+
+}
+
+});
+
 module.exports = router;
