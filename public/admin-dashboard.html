@@ -9,16 +9,22 @@
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
 
 <style>
-body {
-background: #f4f6f9;
-font-family: 'Segoe UI', sans-serif;
+body{
+background:#f4f6f9;
+font-family:'Segoe UI',sans-serif;
 }
-.navbar {
-background: linear-gradient(90deg, #0d6efd, #0b5ed7);
+
+.navbar{
+background:linear-gradient(90deg,#0d6efd,#0b5ed7);
 }
-.card {
-border: none;
-border-radius: 12px;
+
+.card{
+border:none;
+border-radius:12px;
+}
+
+.route-card{
+background:white;
 }
 </style>
 </head>
@@ -30,6 +36,7 @@ border-radius: 12px;
 <span class="navbar-brand fw-bold">
 <i class="bi bi-speedometer2"></i> Admin Dashboard
 </span>
+
 <button onclick="logout()" class="btn btn-danger btn-sm">
 Logout
 </button>
@@ -40,6 +47,7 @@ Logout
 
 <!-- SUMMARY -->
 <div class="row mb-4">
+
 <div class="col-md-3">
 <div class="card p-3 text-center">
 <h6>Total Bookings</h6>
@@ -67,28 +75,35 @@ Logout
 <h3 id="totalRevenue">0</h3>
 </div>
 </div>
+
 </div>
 
 <!-- MANAGE ROUTES -->
 <div class="card p-4">
+
 <div class="d-flex justify-content-between align-items-center mb-3">
+
 <h5>
 <i class="bi bi-map"></i> Manage Routes
 </h5>
+
 <button class="btn btn-primary btn-sm" onclick="openAddModal()">
 <i class="bi bi-plus-circle"></i> Add Route
 </button>
+
 </div>
 
 <div id="scheduleList"></div>
+
 </div>
 
 </div>
 
 <!-- EDIT MODAL -->
-<div class="modal fade" id="editModal" tabindex="-1">
+<div class="modal fade" id="editModal">
 <div class="modal-dialog">
 <div class="modal-content p-4">
+
 <h5>Edit Schedule</h5>
 
 <input id="editOrigin" class="form-control mb-2" placeholder="Origin">
@@ -99,14 +114,16 @@ Logout
 <button class="btn btn-success w-100" onclick="saveSchedule()">
 Save Changes
 </button>
+
 </div>
 </div>
 </div>
 
 <!-- ADD MODAL -->
-<div class="modal fade" id="addModal" tabindex="-1">
+<div class="modal fade" id="addModal">
 <div class="modal-dialog">
 <div class="modal-content p-4">
+
 <h5>Add New Schedule</h5>
 
 <input id="addOrigin" class="form-control mb-2" placeholder="Origin">
@@ -117,6 +134,7 @@ Save Changes
 <button class="btn btn-success w-100" onclick="saveNewSchedule()">
 Add Schedule
 </button>
+
 </div>
 </div>
 </div>
@@ -124,135 +142,182 @@ Add Schedule
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
+
 const token = localStorage.getItem("token");
-if (!token) window.location.href = "/login.html";
 
-let currentScheduleId = null;
-const editModal = new bootstrap.Modal(document.getElementById("editModal"));
-const addModal = new bootstrap.Modal(document.getElementById("addModal"));
-
-/* ===== LOAD DASHBOARD ===== */
-async function loadDashboard() {
-const res = await fetch("/admin/dashboard", {
-headers: { Authorization: "Bearer " + token }
-});
-
-const data = await res.json();
-
-document.getElementById("totalBookings").innerText = data.totalBookings;
-document.getElementById("totalPending").innerText = data.totalPending;
-document.getElementById("totalPaid").innerText = data.totalPaid;
-document.getElementById("totalRevenue").innerText = "Rp " + data.totalRevenue;
+if(!token){
+window.location.href="/login.html";
 }
 
-/* ===== LOAD SCHEDULES ===== */
-async function loadSchedules() {
-const res = await fetch("/admin/schedules", {
-headers: { Authorization: "Bearer " + token }
+let currentScheduleId=null;
+
+const editModal=new bootstrap.Modal(document.getElementById("editModal"));
+const addModal=new bootstrap.Modal(document.getElementById("addModal"));
+
+/* LOAD DASHBOARD */
+async function loadDashboard(){
+
+const res=await fetch("/admin/dashboard",{
+headers:{Authorization:"Bearer "+token}
 });
 
-const data = await res.json();
-const container = document.getElementById("scheduleList");
-container.innerHTML = "";
+const data=await res.json();
 
-data.forEach(s => {
-container.innerHTML += `
-<div class="border rounded p-3 mb-3">
+document.getElementById("totalBookings").innerText=data.totalBookings;
+document.getElementById("totalPending").innerText=data.totalPending;
+document.getElementById("totalPaid").innerText=data.totalPaid;
+document.getElementById("totalRevenue").innerText="Rp "+data.totalRevenue;
+
+}
+
+/* LOAD SCHEDULES */
+
+async function loadSchedules(){
+
+const res=await fetch("/admin/schedules",{
+headers:{Authorization:"Bearer "+token}
+});
+
+const data=await res.json();
+
+const container=document.getElementById("scheduleList");
+container.innerHTML="";
+
+data.forEach(s=>{
+
+container.innerHTML+=`
+
+<div class="route-card border rounded p-3 mb-3">
+
 <h6>${s.origin} → ${s.destination}</h6>
+
 <p>Bus: ${s.bus_name}</p>
+
 <p>Harga: Rp ${s.price}</p>
-<button class="btn btn-warning btn-sm"
-onclick="editSchedule(${s.id}, '${s.origin}', '${s.destination}', '${s.bus_name}', ${s.price})">
+
+<button class="btn btn-warning btn-sm me-2"
+onclick="editSchedule(${s.id},'${s.origin}','${s.destination}','${s.bus_name}',${s.price})">
 Edit
 </button>
 
 <button class="btn btn-danger btn-sm"
 onclick="deleteSchedule(${s.id})">
-delete
-<button>
+Delete
+</button>
 
 </div>
+
 `;
+
 });
+
 }
 
-/* ===== EDIT ===== */
-function editSchedule(id, origin, destination, bus, price) {
-currentScheduleId = id;
+/* EDIT */
 
-document.getElementById("editOrigin").value = origin;
-document.getElementById("editDestination").value = destination;
-document.getElementById("editBus").value = bus;
-document.getElementById("editPrice").value = price;
+function editSchedule(id,origin,destination,bus,price){
+
+currentScheduleId=id;
+
+document.getElementById("editOrigin").value=origin;
+document.getElementById("editDestination").value=destination;
+document.getElementById("editBus").value=bus;
+document.getElementById("editPrice").value=price;
 
 editModal.show();
+
 }
 
-async function saveSchedule() {
-const origin = document.getElementById("editOrigin").value;
-const destination = document.getElementById("editDestination").value;
-const bus_name = document.getElementById("editBus").value;
-const price = document.getElementById("editPrice").value;
+async function saveSchedule(){
 
-const res = await fetch(`/admin/schedules/${currentScheduleId}`, {
-method: "PUT",
-headers: {
-"Content-Type": "application/json",
-Authorization: "Bearer " + token
+const origin=document.getElementById("editOrigin").value;
+const destination=document.getElementById("editDestination").value;
+const bus_name=document.getElementById("editBus").value;
+const price=document.getElementById("editPrice").value;
+
+const res=await fetch(`/admin/schedules/${currentScheduleId}`,{
+
+method:"PUT",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
 },
-body: JSON.stringify({ origin, destination, bus_name, price })
+
+body:JSON.stringify({origin,destination,bus_name,price})
+
 });
 
-const data = await res.json();
+const data=await res.json();
+
 alert(data.message);
 
 editModal.hide();
+
 loadSchedules();
+
 }
 
-/* ===== ADD ===== */
-function openAddModal() {
-document.getElementById("addOrigin").value = "";
-document.getElementById("addDestination").value = "";
-document.getElementById("addBus").value = "";
-document.getElementById("addPrice").value = "";
+/* ADD */
+
+function openAddModal(){
+
+document.getElementById("addOrigin").value="";
+document.getElementById("addDestination").value="";
+document.getElementById("addBus").value="";
+document.getElementById("addPrice").value="";
+
 addModal.show();
+
 }
 
-async function saveNewSchedule() {
-const origin = document.getElementById("addOrigin").value;
-const destination = document.getElementById("addDestination").value;
-const bus_name = document.getElementById("addBus").value;
-const price = document.getElementById("addPrice").value;
+async function saveNewSchedule(){
 
-const res = await fetch("/admin/schedules", {
-method: "POST",
-headers: {
-"Content-Type": "application/json",
-Authorization: "Bearer " + token
+const origin=document.getElementById("addOrigin").value;
+const destination=document.getElementById("addDestination").value;
+const bus_name=document.getElementById("addBus").value;
+const price=document.getElementById("addPrice").value;
+
+const res=await fetch("/admin/schedules",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
 },
-body: JSON.stringify({ origin, destination, bus_name, price })
+
+body:JSON.stringify({origin,destination,bus_name,price})
+
 });
 
-const data = await res.json();
+const data=await res.json();
+
 alert(data.message);
 
 addModal.hide();
+
 loadSchedules();
+
 }
 
-async function deleteSchedule(id) {
+/* DELETE */
 
-if (!confirm("Yakin ingin menghapus schedule ini?")) return;
+async function deleteSchedule(id){
 
-const res = await fetch(`/admin/schedules/${id}`, {
-method: "DELETE",
-headers: {
-Authorization: "Bearer " + token
+if(!confirm("Yakin ingin menghapus schedule ini?")) return;
+
+const res=await fetch(`/admin/schedules/${id}`,{
+
+method:"DELETE",
+
+headers:{
+Authorization:"Bearer "+token
 }
+
 });
 
-const data = await res.json();
+const data=await res.json();
 
 alert(data.message);
 
@@ -260,14 +325,19 @@ loadSchedules();
 
 }
 
-/* ===== LOGOUT ===== */
-function logout() {
+/* LOGOUT */
+
+function logout(){
+
 localStorage.removeItem("token");
-window.location.href = "/login.html";
+
+window.location.href="/login.html";
+
 }
 
 loadDashboard();
 loadSchedules();
+
 </script>
 
 </body>
