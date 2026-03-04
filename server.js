@@ -140,21 +140,7 @@ app.get("/schedules",async(req,res)=>{
 
 try{
 
-const [results]=await db.query(`
-SELECT
-s.id,
-s.price,
-s.departure_time,
-s.arrival_time,
-r.origin,
-r.destination,
-b.name AS bus_name,
-b.total_seats
-FROM schedules s
-LEFT JOIN buses b ON s.bus_id=b.id
-LEFT JOIN routes r ON s.route_id=r.id
-ORDER BY s.id DESC
-`);
+const [results]=await db.query(SELECT s.id, s.price, s.departure_time, s.arrival_time, r.origin, r.destination, b.name AS bus_name, b.total_seats FROM schedules s LEFT JOIN buses b ON s.bus_id=b.id LEFT JOIN routes r ON s.route_id=r.id ORDER BY s.id DESC);
 
 res.json(results);
 
@@ -178,26 +164,16 @@ try{
 const {schedule_id,seat_number}=req.body;
 const user_id=req.user.id;
 
-const [seatCheck]=await db.query(`
-SELECT * FROM bookings
-WHERE schedule_id=?
-AND seat_number=?
-AND status IN ('PENDING','PAID')
-AND (expired_at IS NULL OR expired_at>NOW())
-`,[schedule_id,seat_number]);
+const [seatCheck]=await db.query(SELECT * FROM bookings WHERE schedule_id=? AND seat_number=? AND status IN ('PENDING','PAID') AND (expired_at IS NULL OR expired_at>NOW()),[schedule_id,seat_number]);
 
 if(seatCheck.length)
 return res.status(400).json({
 message:"Seat sudah dibooking"
 });
 
-const expiredAt=new Date(Date.now()+15*60*1000);
+const expiredAt=new Date(Date.now()+15601000);
 
-const [result]=await db.query(`
-INSERT INTO bookings
-(user_id,schedule_id,seat_number,status,expired_at)
-VALUES (?,?,?,'PENDING',?)
-`,[user_id,schedule_id,seat_number,expiredAt]);
+const [result]=await db.query(INSERT INTO bookings (user_id,schedule_id,seat_number,status,expired_at) VALUES (?,?,?,'PENDING',?),[user_id,schedule_id,seat_number,expiredAt]);
 
 res.json({
 message:"Booking berhasil dibuat",
@@ -223,23 +199,7 @@ try{
 
 const user_id=req.user.id;
 
-const [rows]=await db.query(`
-SELECT
-b.id,
-b.seat_number,
-b.status,
-b.expired_at,
-s.price,
-r.origin,
-r.destination,
-bus.name as bus_name
-FROM bookings b
-JOIN schedules s ON b.schedule_id=s.id
-JOIN routes r ON s.route_id=r.id
-JOIN buses bus ON s.bus_id=bus.id
-WHERE b.user_id=?
-ORDER BY b.id DESC
-`,[user_id]);
+const [rows]=await db.query(SELECT b.id, b.seat_number, b.status, b.expired_at, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.user_id=? ORDER BY b.id DESC,[user_id]);
 
 res.json(rows);
 
@@ -312,12 +272,7 @@ try{
 
 const scheduleId=req.params.scheduleId;
 
-const [rows]=await db.query(`
-SELECT seat_number
-FROM bookings
-WHERE schedule_id=?
-AND status IN ('PENDING','PAID')
-`,[scheduleId]);
+const [rows]=await db.query(SELECT seat_number FROM bookings WHERE schedule_id=? AND status IN ('PENDING','PAID'),[scheduleId]);
 
 const seats=rows.map(r=>r.seat_number);
 
@@ -342,20 +297,7 @@ try{
 
 const bookingId=req.params.id;
 
-const [rows]=await db.query(`
-SELECT
-b.id,
-b.seat_number,
-s.price,
-r.origin,
-r.destination,
-bus.name as bus_name
-FROM bookings b
-JOIN schedules s ON b.schedule_id=s.id
-JOIN routes r ON s.route_id=r.id
-JOIN buses bus ON s.bus_id=bus.id
-WHERE b.id=?
-`,[bookingId]);
+const [rows]=await db.query(SELECT b.id, b.seat_number, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.id=?,[bookingId]);
 
 if(!rows.length){
 return res.status(404).json({message:"Ticket tidak ditemukan"});
@@ -363,32 +305,66 @@ return res.status(404).json({message:"Ticket tidak ditemukan"});
 
 const ticket=rows[0];
 
-const doc=new PDFDocument();
+const doc=new PDFDocument({
+size:"A4",
+margin:50
+});
 
 res.setHeader("Content-Type","application/pdf");
 res.setHeader("Content-Disposition","attachment; filename=ticket.pdf");
 
 doc.pipe(res);
 
-doc.fontSize(22).text("BUS TICKET",{align:"center"});
+/* HEADER */
 
-doc.moveDown();
+doc
+.rect(0,0,600,90)
+.fill("#315B4F");
 
-doc.text(`Route : ${ticket.origin} → ${ticket.destination}`);
-doc.text(`Bus : ${ticket.bus_name}`);
-doc.text(`Seat : ${ticket.seat_number}`);
-doc.text(`Price : Rp ${ticket.price}`);
+doc
+.fillColor("white")
+.fontSize(24)
+.text("SAWAH JAYA BUS",50,35);
+
+/* BODY */
+
+doc.moveDown(4);
+
+doc.fillColor("black");
+
+doc
+.fontSize(20)
+.text(${ticket.origin} → ${ticket.destination},{
+align:"center"
+});
+
+doc.moveDown(2);
+
+doc.fontSize(14);
+
+doc.text(Bus : ${ticket.bus_name});
+doc.text(Seat : ${ticket.seat_number});
+doc.text(Price : Rp ${ticket.price});
 
 doc.moveDown();
 
 /* QR CODE */
 
-const qrData=`TICKET-${ticket.id}-SEAT-${ticket.seat_number}`;
+const qrData=TICKET-${ticket.id}-SEAT-${ticket.seat_number};
 
 const qrImage=await QRCode.toDataURL(qrData);
 
 doc.image(qrImage,{
 fit:[150,150],
+align:"center"
+});
+
+doc.moveDown();
+
+doc
+.fontSize(12)
+.fillColor("#315B4F")
+.text("Scan QR ini saat boarding",{
 align:"center"
 });
 
