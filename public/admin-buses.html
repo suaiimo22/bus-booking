@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Admin Buses</title>
+<link rel="stylesheet" href="admin-panel.css">
+
+</head>
+
+<body>
+
+<div class="nav">
+<a href="admin-dashboard.html">Dashboard</a>
+<a href="admin-routes.html">Routes</a>
+<a href="admin-buses.html">Buses</a>
+<a href="admin-schedules.html">Schedules</a>
+<a href="admin-bookings.html">Bookings</a>
+</div>
+
+<div class="card">
+
+<h2>Buses</h2>
+
+<input id="name" placeholder="Bus Name">
+<input id="seats" placeholder="Total Seats">
+<button onclick="addBus()">Add</button>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Name</th>
+<th>Seats</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="buses"></tbody>
+
+</table>
+
+</div>
+
+<script>
+
+async function loadBus(){
+
+const res=await fetch("/admin/buses");
+const data=await res.json();
+
+let html="";
+
+data.forEach(b=>{
+
+html+=`
+<tr>
+<td>${b.id}</td>
+<td>${b.name}</td>
+<td>${b.total_seats}</td>
+<td>
+<button onclick="deleteBus(${b.id})">Delete</button>
+</td>
+</tr>
+`;
+
+});
+
+document.getElementById("buses").innerHTML=html;
+
+}
+
+async function addBus(){
+
+const name=document.getElementById("name").value;
+const seats=document.getElementById("seats").value;
+
+await fetch("/admin/buses",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({
+name,
+total_seats:seats
+})
+});
+
+loadBus();
+
+}
+
+async function deleteBus(id){
+
+await fetch("/admin/buses/"+id,{
+method:"DELETE"
+});
+
+loadBus();
+
+}
+
+loadBus();
+
+</script>
+
+</body>
+</html>

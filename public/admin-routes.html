@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Admin Routes</title>
+<link rel="stylesheet" href="admin-panel.css">
+
+</head>
+
+<body>
+
+<div class="nav">
+<a href="admin-dashboard.html">Dashboard</a>
+<a href="admin-routes.html">Routes</a>
+<a href="admin-buses.html">Buses</a>
+<a href="admin-schedules.html">Schedules</a>
+<a href="admin-bookings.html">Bookings</a>
+</div>
+
+<div class="card">
+
+<h2>Routes</h2>
+
+<input id="origin" placeholder="Origin">
+<input id="destination" placeholder="Destination">
+<button onclick="addRoute()">Add</button>
+
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Origin</th>
+<th>Destination</th>
+<th>Action</th>
+</tr>
+</thead>
+
+<tbody id="routes"></tbody>
+
+</table>
+
+</div>
+
+<script>
+
+async function loadRoutes(){
+
+const res=await fetch("/admin/routes");
+const data=await res.json();
+
+let html="";
+
+data.forEach(r=>{
+
+html+=`
+<tr>
+<td>${r.id}</td>
+<td>${r.origin}</td>
+<td>${r.destination}</td>
+<td>
+<button onclick="deleteRoute(${r.id})">Delete</button>
+</td>
+</tr>
+`;
+
+});
+
+document.getElementById("routes").innerHTML=html;
+
+}
+
+async function addRoute(){
+
+const origin=document.getElementById("origin").value;
+const destination=document.getElementById("destination").value;
+
+await fetch("/admin/routes",{
+method:"POST",
+headers:{
+"Content-Type":"application/json"
+},
+body:JSON.stringify({origin,destination})
+});
+
+loadRoutes();
+
+}
+
+async function deleteRoute(id){
+
+await fetch("/admin/routes/"+id,{
+method:"DELETE"
+});
+
+loadRoutes();
+
+}
+
+loadRoutes();
+
+</script>
+
+</body>
+</html>
