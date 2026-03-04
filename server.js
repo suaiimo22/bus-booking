@@ -8,6 +8,7 @@ const bcrypt = require("bcryptjs");
 const helmet = require("helmet");
 const cors = require("cors");
 const PDFDocument = require("pdfkit");
+const QRcode = require("qrcode");
 
 const db = require("./db");
 const verifyToken = require("./middleware/verifyToken");
@@ -234,6 +235,79 @@ res.json(seats);
 
 res.status(500).json({
 message:"Error ambil seat",
+error:err.message
+});
+
+}
+
+});
+
+/* ================= DOWNLOAD TICKET PDF ================= */
+
+app.get("/ticket/:id", verifyToken, async (req,res)=>{
+
+try{
+
+const bookingId = req.params.id;
+
+const [rows] = await db.query(`
+SELECT
+b.id,
+b.seat_number,
+s.price,
+r.origin,
+r.destination,
+bus.name as bus_name
+FROM bookings b
+JOIN schedules s ON b.schedule_id=s.id
+JOIN routes r ON s.route_id=r.id
+JOIN buses bus ON s.bus_id=bus.id
+WHERE b.id=?
+`,[bookingId]);
+
+if(!rows.length){
+return res.status(404).json({message:"Ticket tidak ditemukan"});
+}
+
+const ticket = rows[0];
+
+const doc = new PDFDocument();
+
+res.setHeader("Content-Type","application/pdf");
+
+doc.pipe(res);
+
+doc.fontSize(20).text("BUS TICKET",{align:"center"});
+
+doc.moveDown();
+
+doc.text(`Route: ${ticket.origin} → ${ticket.destination}`);
+doc.text(`Bus: ${ticket.bus_name}`);
+doc.text(`Seat: ${ticket.seat_number}`);
+doc.text(`Price: Rp ${ticket.price}`);
+
+doc.moveDown();
+
+/* QR CODE */
+
+const qrData = JSON.stringify({
+booking_id: ticket.id,
+seat: ticket.seat_number
+});
+
+const qrImage = await QRCode.toDataURL(qrData);
+
+doc.image(qrImage,{
+fit:[120,120],
+align:"center"
+});
+
+doc.end();
+
+}catch(err){
+
+res.status(500).json({
+message:"Error generate ticket",
 error:err.message
 });
 
