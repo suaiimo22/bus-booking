@@ -228,7 +228,23 @@ try{
 
 const user_id=req.user.id;
 
-const [rows]=await db.query(`SELECT b.id, b.seat_number, b.status, b.expired_at, s.price, r.origin, r.destination, bus.name as bus_name FROM bookings b JOIN schedules s ON b.schedule_id=s.id JOIN routes r ON s.route_id=r.id JOIN buses bus ON s.bus_id=bus.id WHERE b.user_id=? ORDER BY b.id DESC,[user_id]);
+const [rows]=await db.query(`
+SELECT
+b.id,
+b.seat_number,
+b.status,
+b.expired_at,
+s.price,
+r.origin,
+r.destination,
+bus.name as bus_name
+FROM bookings b
+JOIN schedules s ON b.schedule_id=s.id
+JOIN routes r ON s.route_id=r.id
+JOIN buses bus ON s.bus_id=bus.id
+WHERE b.user_id=?
+ORDER BY b.id DESC
+`,[user_id]);
 
 res.json(rows);
 
