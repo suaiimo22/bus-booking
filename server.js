@@ -144,7 +144,21 @@ app.get("/schedules",async(req,res)=>{
 
 try{
 
-const [results]=await db.query(SELECT s.id, s.price, s.departure_time, s.arrival_time, r.origin, r.destination, b.name AS bus_name, b.total_seats FROM schedules s LEFT JOIN buses b ON s.bus_id=b.id LEFT JOIN routes r ON s.route_id=r.id ORDER BY s.id DESC);
+const [results]=await db.query(`
+SELECT
+s.id, 
+s.price, 
+s.departure_time, 
+s.arrival_time, 
+r.origin, 
+r.destination, 
+b.name AS bus_name, 
+b.total_seats 
+FROM schedules s
+LEFT JOIN buses b ON s.bus_id=b.id
+LEFT JOIN routes r ON s.route_id=r.id
+ORDER BY s.id DESC
+`);
 
 res.json(results);
 
