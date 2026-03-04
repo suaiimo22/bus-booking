@@ -89,25 +89,30 @@ container.innerHTML += `
 
 <p class="mb-1">Seat: ${b.seat_number}</p>
 
-<p class="mb-2">Price: Rp ${b.price}</p>
+<p class="mb-1">Price: Rp ${b.price}</p>
 
-<p class="mb-3">Status: <b>${b.status}</b></p>
+<p class="mb-3">
+Status:
+<b class="${b.status === 'PAID' ? 'text-success' : 'text-warning'}">
+${b.status}
+</b>
+</p>
 
 <div class="d-flex gap-2">
 
+${b.status === "PENDING" ? `
 <button onclick="payBooking(${b.id})"
 class="btn btn-primary btn-sm">
-
 Pay
-
 </button>
+` : ""}
 
+${b.status === "PAID" ? `
 <button onclick="downloadTicket(${b.id})"
 class="btn btn-success btn-sm">
-
 Download Ticket
-
 </button>
+` : ""}
 
 </div>
 
