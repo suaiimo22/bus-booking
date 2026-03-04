@@ -182,7 +182,13 @@ try{
 const {schedule_id,seat_number}=req.body;
 const user_id=req.user.id;
 
-const [seatCheck]=await db.query(SELECT * FROM bookings WHERE schedule_id=? AND seat_number=? AND status IN ('PENDING','PAID') AND (expired_at IS NULL OR expired_at>NOW()),[schedule_id,seat_number]);
+const [seatCheck]=await db.query(`
+SELECT * FROM bookings
+WHERE schedule_id=?
+AND seat_number=?
+AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at>NOW())
+`,[schedule_id,seat_number]);
 
 if(seatCheck.length){
 return res.status(400).json({
@@ -190,9 +196,13 @@ message:"Seat sudah dibooking"
 });
 }
 
-const expiredAt=new Date(Date.now()+15601000);
+const expiredAt=new Date(Date.now()+15*60*1000);
 
-const [result]=await db.query(INSERT INTO bookings (user_id,schedule_id,seat_number,status,expired_at) VALUES (?,?,?,'PENDING',?),[user_id,schedule_id,seat_number,expiredAt]);
+const [result]=await db.query(`
+INSERT INTO bookings
+(user_id,schedule_id,seat_number,status,expired_at)
+VALUES (?,?,?,'PENDING',?)
+`,[user_id,schedule_id,seat_number,expiredAt]);
 
 res.json({
 message:"Booking berhasil dibuat",
