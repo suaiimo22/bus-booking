@@ -267,7 +267,7 @@ try{
 
 const bookingId=req.params.id;
 
-const [rows]=await db.query(`
+const [rows]=await db.query(
 "SELECT * FROM bookings WHERE id=?",
 [bookingId]
 );
@@ -292,7 +292,7 @@ message:"Booking tidak bisa dibayar"
 });
 }
 
-await db.query(`
+await db.query(
 "UPDATE bookings SET status='PAID' WHERE id=?",
 [bookingId]
 );
