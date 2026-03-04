@@ -271,5 +271,29 @@ res.json(rows);
 
 });
 
+/* ROUTE AUTOCOMPLETE SEARCH */
+
+router.get("/routes/search", async (req,res)=>{
+
+try{
+
+const keyword = req.query.keyword || "";
+
+const [rows] = await db.query(`
+SELECT DISTINCT origin
+FROM routes
+WHERE origin LIKE ?
+LIMIT 10
+`, [`%${keyword}%`]);
+
+res.json(rows);
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
 
 module.exports=router;
