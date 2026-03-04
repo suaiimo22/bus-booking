@@ -210,7 +210,36 @@ res.status(500).json({ message: "Payment error", error: err.message });
 
 /* ====== MOUNT ADMIN ROUTES (INI YANG TADI KURANG) ====== */
 app.use(adminRoutes);
-/* ======================================================= */
+
+/* ================= GET BOOKED SEATS ================= */
+
+app.get("/seats/:scheduleId", async (req,res)=>{
+
+try{
+
+const scheduleId = req.params.scheduleId;
+
+const [rows] = await db.query(`
+SELECT seat_number
+FROM bookings
+WHERE schedule_id=?
+AND status IN ('PENDING','PAID')
+`,[scheduleId]);
+
+const seats = rows.map(r=>r.seat_number);
+
+res.json(seats);
+
+}catch(err){
+
+res.status(500).json({
+message:"Error ambil seat",
+error:err.message
+});
+
+}
+
+});
 
 /* ================= AUTO EXPIRE ================= */
 startExpireJob();

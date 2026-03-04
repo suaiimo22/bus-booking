@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Seat Selection</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+
+body{
+background:#f4f6f9;
+font-family:Segoe UI;
+}
+
+.seat-layout{
+display:grid;
+grid-template-columns:repeat(4,60px);
+gap:10px;
+max-width:280px;
+margin:auto;
+}
+
+.seat{
+width:60px;
+height:60px;
+display:flex;
+align-items:center;
+justify-content:center;
+border-radius:8px;
+font-weight:bold;
+cursor:pointer;
+}
+
+.available{
+background:#22c55e;
+color:white;
+}
+
+.booked{
+background:#ef4444;
+color:white;
+cursor:not-allowed;
+}
+
+.selected{
+background:#2563eb;
+color:white;
+}
+
+</style>
+
+</head>
+
+<body class="p-4">
+
+<h3 class="mb-4">Select Seat</h3>
+
+<div id="seatLayout" class="seat-layout"></div>
+
+<br>
+
+<button class="btn btn-primary" onclick="bookSeat()">
+Book Seat
+</button>
+
+<script>
+
+const token = localStorage.getItem("token");
+
+const params = new URLSearchParams(window.location.search);
+
+const scheduleId = params.get("schedule");
+
+let selectedSeat = null;
+
+async function loadSeats(){
+
+const res = await fetch(`/seats/${scheduleId}`);
+
+const booked = await res.json();
+
+const layout = document.getElementById("seatLayout");
+
+layout.innerHTML="";
+
+for(let i=1;i<=40;i++){
+
+const seat=document.createElement("div");
+
+seat.innerText=i;
+
+seat.classList.add("seat");
+
+if(booked.includes(i)){
+
+seat.classList.add("booked");
+
+}else{
+
+seat.classList.add("available");
+
+seat.onclick=()=>selectSeat(i,seat);
+
+}
+
+layout.appendChild(seat);
+
+}
+
+}
+
+function selectSeat(num,el){
+
+document.querySelectorAll(".seat").forEach(s=>{
+s.classList.remove("selected");
+});
+
+el.classList.add("selected");
+
+selectedSeat=num;
+
+}
+
+async function bookSeat(){
+
+if(!selectedSeat){
+
+alert("Pilih seat dulu");
+return;
+
+}
+
+const res = await fetch("/bookings",{
+
+method:"POST",
+
+headers:{
+"Content-Type":"application/json",
+Authorization:"Bearer "+token
+},
+
+body:JSON.stringify({
+schedule_id:scheduleId,
+seat_number:selectedSeat
+})
+
+});
+
+const data = await res.json();
+
+alert(data.message);
+
+window.location="/my-bookings.html";
+
+}
+
+loadSeats();
+
+</script>
+
+</body>
+</html>
