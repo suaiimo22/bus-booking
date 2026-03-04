@@ -1,13 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
 <title>Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
@@ -54,10 +54,17 @@ border:none;
 border-radius:12px;
 }
 
+.table td{
+vertical-align:middle;
+}
+
 </style>
+
 </head>
 
 <body>
+
+<!-- SIDEBAR -->
 
 <div class="sidebar">
 
@@ -76,9 +83,13 @@ Logout
 
 </div>
 
+<!-- MAIN -->
+
 <div class="main">
 
 <h3 class="mb-4">Dashboard</h3>
+
+<!-- STATS -->
 
 <div class="row mb-4">
 
@@ -113,6 +124,7 @@ Logout
 </div>
 
 <!-- REVENUE CHART -->
+
 <div class="card p-4 mb-4">
 
 <h5 class="mb-3">Revenue Chart</h5>
@@ -121,7 +133,9 @@ Logout
 
 </div>
 
-<div class="card p-4">
+<!-- MANAGE ROUTES -->
+
+<div class="card p-4 mb-4">
 
 <div class="d-flex justify-content-between mb-3">
 
@@ -137,9 +151,39 @@ Add Route
 
 </div>
 
+<!-- ALL BOOKINGS -->
+
+<div class="card p-4">
+
+<h5 class="mb-3">All Bookings</h5>
+
+<div class="table-responsive">
+
+<table class="table table-striped">
+
+<thead>
+<tr>
+<th>User</th>
+<th>Route</th>
+<th>Bus</th>
+<th>Seat</th>
+<th>Status</th>
+<th>Price</th>
+</tr>
+</thead>
+
+<tbody id="bookingTable"></tbody>
+
+</table>
+
+</div>
+
+</div>
+
 </div>
 
 <!-- EDIT MODAL -->
+
 <div class="modal fade" id="editModal">
 <div class="modal-dialog">
 <div class="modal-content p-4">
@@ -160,6 +204,7 @@ Save Changes
 </div>
 
 <!-- ADD MODAL -->
+
 <div class="modal fade" id="addModal">
 <div class="modal-dialog">
 <div class="modal-content p-4">
@@ -235,17 +280,12 @@ borderWidth:3,
 tension:0.3
 }]
 },
-options:{
-responsive:true,
-plugins:{
-legend:{display:true}
-}
-}
+options:{responsive:true}
 });
 
 }
 
-/* LOAD SCHEDULE */
+/* LOAD ROUTES */
 
 async function loadSchedules(){
 
@@ -256,7 +296,6 @@ headers:{Authorization:"Bearer "+token}
 const data=await res.json();
 
 const container=document.getElementById("scheduleList");
-
 container.innerHTML="";
 
 data.forEach(s=>{
@@ -289,6 +328,36 @@ Delete
 
 }
 
+/* LOAD ALL BOOKINGS */
+
+async function loadBookings(){
+
+const res = await fetch("/admin/bookings",{
+headers:{Authorization:"Bearer "+token}
+});
+
+const data = await res.json();
+
+const table = document.getElementById("bookingTable");
+table.innerHTML="";
+
+data.forEach(b=>{
+
+table.innerHTML+=`
+<tr>
+<td>${b.user_name}</td>
+<td>${b.origin} → ${b.destination}</td>
+<td>${b.bus_name}</td>
+<td>${b.seat_number}</td>
+<td>${b.status}</td>
+<td>Rp ${b.price}</td>
+</tr>
+`;
+
+});
+
+}
+
 /* EDIT */
 
 function editSchedule(id,origin,destination,bus,price){
@@ -314,12 +383,10 @@ const price=document.getElementById("editPrice").value;
 const res=await fetch(`/admin/schedules/${currentScheduleId}`,{
 
 method:"PUT",
-
 headers:{
 "Content-Type":"application/json",
 Authorization:"Bearer "+token
 },
-
 body:JSON.stringify({origin,destination,bus_name,price})
 
 });
@@ -327,9 +394,7 @@ body:JSON.stringify({origin,destination,bus_name,price})
 const data=await res.json();
 
 alert(data.message);
-
 editModal.hide();
-
 loadSchedules();
 
 }
@@ -357,12 +422,10 @@ const price=document.getElementById("addPrice").value;
 const res=await fetch("/admin/schedules",{
 
 method:"POST",
-
 headers:{
 "Content-Type":"application/json",
 Authorization:"Bearer "+token
 },
-
 body:JSON.stringify({origin,destination,bus_name,price})
 
 });
@@ -370,9 +433,7 @@ body:JSON.stringify({origin,destination,bus_name,price})
 const data=await res.json();
 
 alert(data.message);
-
 addModal.hide();
-
 loadSchedules();
 
 }
@@ -384,17 +445,13 @@ async function deleteSchedule(id){
 if(!confirm("Delete schedule ini?")) return;
 
 const res=await fetch(`/admin/schedules/${id}`,{
-
 method:"DELETE",
-
 headers:{Authorization:"Bearer "+token}
-
 });
 
 const data=await res.json();
 
 alert(data.message);
-
 loadSchedules();
 
 }
@@ -402,7 +459,6 @@ loadSchedules();
 function logout(){
 
 localStorage.removeItem("token");
-
 window.location.href="/login.html";
 
 }
@@ -412,6 +468,7 @@ window.location.href="/login.html";
 loadDashboard();
 loadSchedules();
 loadRevenueChart();
+loadBookings();
 
 </script>
 
