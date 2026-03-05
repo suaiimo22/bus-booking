@@ -12,22 +12,46 @@ body{
 background:#f5f6fa;
 }
 
+/* NAVBAR */
+
 .navbar{
 margin-bottom:30px;
 }
 
+/* BUS CARD */
+
 .bus-card{
 background:white;
-padding:20px;
-border-radius:12px;
+padding:25px;
+border-radius:14px;
 margin-bottom:20px;
-box-shadow:0 4px 10px rgba(0,0,0,0.1);
+box-shadow:0 8px 20px rgba(0,0,0,0.08);
+transition:0.2s;
 }
 
+.bus-card:hover{
+transform:translateY(-4px);
+}
+
+/* PRICE */
+
 .price{
-font-size:22px;
+font-size:24px;
 font-weight:bold;
 color:#27ae60;
+}
+
+/* ROUTE */
+
+.route{
+font-size:20px;
+font-weight:bold;
+}
+
+/* FOOTER */
+
+footer{
+margin-top:80px;
 }
 
 </style>
@@ -36,22 +60,31 @@ color:#27ae60;
 
 <body>
 
+<!-- NAVBAR -->
+
 <nav class="navbar navbar-dark bg-dark">
 
 <div class="container">
 
-<a class="navbar-brand">🚌 Sawah Jaya Bus</a>
+<a class="navbar-brand fw-bold">🚌 Sawah Jaya Bus</a>
 
 <div>
 
-<a href="index.html" class="btn btn-light btn-sm">Home</a>
-<a href="my-bookings.html" class="btn btn-success btn-sm">My Tickets</a>
+<a href="index.html" class="btn btn-outline-light btn-sm me-2">
+Home
+</a>
+
+<a href="my-bookings.html" class="btn btn-success btn-sm">
+My Tickets
+</a>
 
 </div>
 
 </div>
 
 </nav>
+
+<!-- BUS LIST -->
 
 <div class="container">
 
@@ -60,6 +93,16 @@ color:#27ae60;
 <div id="busList"></div>
 
 </div>
+
+<!-- FOOTER -->
+
+<footer class="bg-dark text-white text-center p-3">
+
+<p class="mb-0">
+© 2026 Sawah Jaya Bus • Online Bus Ticket Booking
+</p>
+
+</footer>
 
 <script>
 
@@ -80,12 +123,23 @@ html += `
 
 <div class="col-md-6">
 
-<h5>${bus.origin} → ${bus.destination}</h5>
+<div class="route">
+${bus.origin} → ${bus.destination}
+</div>
 
-<p>
-Bus: <b>${bus.bus_name}</b><br>
-Departure: ${bus.departure_time}<br>
-Arrival: ${bus.arrival_time}<br>
+<p class="mt-2 mb-1">
+Bus: <b>${bus.bus_name}</b>
+</p>
+
+<p class="mb-1">
+Departure: ${bus.departure_time}
+</p>
+
+<p class="mb-1">
+Arrival: ${bus.arrival_time}
+</p>
+
+<p class="text-muted">
 Seats: ${bus.total_seats}
 </p>
 
@@ -93,14 +147,19 @@ Seats: ${bus.total_seats}
 
 <div class="col-md-3 d-flex align-items-center">
 
-<div class="price">Rp ${bus.price}</div>
+<div class="price">
+Rp ${bus.price}
+</div>
 
 </div>
 
 <div class="col-md-3 d-flex align-items-center">
 
-<a href="book-seat.html?schedule=${bus.id}" class="btn btn-success w-100">
+<a href="book-seat.html?schedule=${bus.id}"
+class="btn btn-success w-100">
+
 Select Seat
+
 </a>
 
 </div>
