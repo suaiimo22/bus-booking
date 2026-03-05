@@ -13,7 +13,7 @@ background:#f5f6fa;
 }
 
 .bus{
-width:300px;
+width:320px;
 margin:auto;
 background:white;
 padding:20px;
@@ -56,22 +56,10 @@ background:#f1c40f;
 width:20px;
 }
 
-.legend{
-margin-top:20px;
-text-align:center;
-}
-
-.legend span{
-display:inline-block;
-width:20px;
-height:20px;
-margin-right:5px;
-border-radius:3px;
-}
-
 </style>
 
 </head>
+
 <body>
 
 <div class="container mt-5">
@@ -80,9 +68,7 @@ border-radius:3px;
 
 <div class="bus">
 
-<div class="driver">
-Driver
-</div>
+<div class="driver">Driver</div>
 
 <div id="seatContainer"></div>
 
@@ -90,6 +76,8 @@ Driver
 
 Selected Seat:
 <strong id="selectedSeat">None</strong>
+
+</div>
 
 <div class="text-center mt-3">
 
@@ -103,65 +91,118 @@ Book This Seat
 
 </div>
 
-<div class="legend mt-4">
-
-<p>
-<span style="background:#2ecc71"></span> Available
-</p>
-
-<p>
-<span style="background:#e74c3c"></span> Booked
-</p>
-
-<p>
-<span style="background:#f1c40f"></span> Selected
-</p>
-
-</div>
-
-</div>
-
-<script src="seat-layout.js"></script>
-
 <script>
+
+const seatContainer = document.getElementById("seatContainer");
+
+const rows = ["A","B","C","D","E","F","G","H"];
+const cols = [1,2,3,4];
+
+let selectedSeat = null;
+
+const urlParams = new URLSearchParams(window.location.search);
+const scheduleId = urlParams.get("schedule");
+
+function generateSeats(bookedSeats = []){
+
+seatContainer.innerHTML = "";
+
+rows.forEach(row => {
+
+let rowDiv = document.createElement("div");
+rowDiv.className = "seat-row";
+
+cols.forEach(col => {
+
+let seat = row + col;
+
+let seatBtn = document.createElement("button");
+
+seatBtn.innerText = seat;
+seatBtn.className = "seat";
+
+if(bookedSeats.includes(seat)){
+seatBtn.classList.add("booked");
+seatBtn.disabled = true;
+}
+
+seatBtn.onclick = () => {
+
+document.querySelectorAll(".seat").forEach(s=>{
+s.classList.remove("selected")
+})
+
+seatBtn.classList.add("selected");
+
+selectedSeat = seat;
+
+document.getElementById("selectedSeat").innerText = seat;
+
+}
+
+rowDiv.appendChild(seatBtn);
+
+if(col == 2){
+let aisle = document.createElement("div");
+aisle.className="aisle";
+rowDiv.appendChild(aisle);
+}
+
+})
+
+seatContainer.appendChild(rowDiv);
+
+})
+
+}
+
+async function loadSeats(){
+
+const res = await fetch(`/api/booked-seats/${scheduleId}`);
+const bookedSeats = await res.json();
+
+generateSeats(bookedSeats);
+
+}
+
+loadSeats();
 
 async function bookSeat(){
 
 const token = localStorage.getItem("token");
 
 if(!token){
-alert("Silakan login dulu");
-window.location = "login.html";
+alert("Login dulu");
+window.location="login.html";
 return;
 }
 
-const urlParams = new URLSearchParams(window.location.search);
-const scheduleId = urlParams.get("schedule");
-
-const seat = document.getElementById("selectedSeat").innerText;
-
-if(seat === "None"){
+if(!selectedSeat){
 alert("Pilih seat dulu");
 return;
 }
 
 const res = await fetch("/bookings",{
+
 method:"POST",
+
 headers:{
 "Content-Type":"application/json",
-"Authorization":"Bearer " + token
+"Authorization":"Bearer "+token
 },
+
 body:JSON.stringify({
 schedule_id:scheduleId,
-seat_number:seat
+seat_number:selectedSeat
 })
+
 });
 
 const data = await res.json();
 
 alert(data.message);
 
-window.location = "my-bookings.html";
+window.location="my-bookings.html";
 
 }
 
