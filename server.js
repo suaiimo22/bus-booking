@@ -250,6 +250,28 @@ error: err.message
 
 });
 
+// API ambil seat yang sudah dibooking
+app.get("/api/booked-seats/:bus_id", (req, res) => {
+
+const busId = req.params.bus_id;
+
+db.query(
+"SELECT seat_number FROM bookings WHERE bus_id = ? AND status != 'EXPIRED'",
+[busId],
+(err, results) => {
+
+if(err){
+return res.status(500).json(err);
+}
+
+const seats = results.map(r => r.seat_number);
+
+res.json(seats);
+
+});
+
+});
+
 /* ================= PAYMENT ================= */
 
 app.post("/pay/:id", verifyToken, async (req, res) => {
