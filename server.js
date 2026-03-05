@@ -41,6 +41,7 @@ message: "Bus Booking API running 🚀"
 
 app.post("/register", async (req, res) => {
 try {
+
 const { name, email, user_password } = req.body;
 
 if (!name || !email || !user_password) {
@@ -70,16 +71,19 @@ await db.query(
 res.json({ message: "Register berhasil" });
 
 } catch (err) {
+
 res.status(500).json({
 message: "Server error",
 error: err.message
 });
+
 }
 });
 
 /* ================= LOGIN ================= */
 
 app.post("/login", async (req, res) => {
+
 try {
 
 const { email, password } = req.body;
@@ -129,11 +133,13 @@ error: err.message
 });
 
 }
+
 });
 
 /* ================= GET SCHEDULES ================= */
 
 app.get("/schedules", async (req, res) => {
+
 try {
 
 const [results] = await db.query(`
@@ -162,6 +168,7 @@ error: err.message
 });
 
 }
+
 });
 
 /* ================= CREATE BOOKING ================= */
@@ -250,25 +257,34 @@ error: err.message
 
 });
 
-// API ambil seat yang sudah dibooking
-app.get("/api/booked-seats/:bus_id", (req, res) => {
+/* ================= GET BOOKED SEATS ================= */
 
-const busId = req.params.bus_id;
+app.get("/api/booked-seats/:scheduleId", async (req, res) => {
 
-db.query(
-"SELECT seat_number FROM bookings WHERE bus_id = ? AND status != 'EXPIRED'",
-[busId],
-(err, results) => {
+try {
 
-if(err){
-return res.status(500).json(err);
-}
+const scheduleId = req.params.scheduleId;
 
-const seats = results.map(r => r.seat_number);
+const [rows] = await db.query(`
+SELECT seat_number
+FROM bookings
+WHERE schedule_id=?
+AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at > NOW())
+`, [scheduleId]);
+
+const seats = rows.map(r => r.seat_number);
 
 res.json(seats);
 
+} catch (err) {
+
+res.status(500).json({
+message: "Error ambil seat booking",
+error: err.message
 });
+
+}
 
 });
 
@@ -318,36 +334,6 @@ message: "Pembayaran berhasil ✅"
 
 res.status(500).json({
 message: "Payment error",
-error: err.message
-});
-
-}
-
-});
-
-/* ================= GET BOOKED SEATS ================= */
-
-app.get("/bookings/seats/:scheduleId", async (req, res) => {
-
-try {
-
-const scheduleId = req.params.scheduleId;
-
-const [rows] = await db.query(
-`SELECT seat_number FROM bookings
-WHERE schedule_id=?
-AND status IN ('PENDING','PAID')`,
-[scheduleId]
-);
-
-const seats = rows.map(r => r.seat_number);
-
-res.json(seats);
-
-} catch (err) {
-
-res.status(500).json({
-message: "Error ambil seat",
 error: err.message
 });
 
