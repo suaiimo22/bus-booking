@@ -18,16 +18,23 @@ font-family:Segoe UI;
 .hero{
 background:linear-gradient(135deg,#0d6efd,#0dcaf0);
 color:white;
-padding:60px 20px;
+padding:80px 20px;
 text-align:center;
 }
 
-.search-box{
+.search-card{
 background:white;
-padding:25px;
+padding:30px;
 border-radius:12px;
-margin-top:-40px;
-box-shadow:0 10px 25px rgba(0,0,0,0.1);
+margin-top:-60px;
+box-shadow:0 15px 40px rgba(0,0,0,0.1);
+}
+
+.swap-btn{
+font-size:22px;
+border-radius:50%;
+width:45px;
+height:45px;
 }
 
 .autocomplete-box{
@@ -49,6 +56,11 @@ cursor:pointer;
 background:#f1f1f1;
 }
 
+.popular a{
+text-decoration:none;
+margin-right:15px;
+}
+
 </style>
 
 </head>
@@ -57,17 +69,17 @@ background:#f1f1f1;
 <div class="hero">
 
 <h1>Sawah Jaya Bus</h1>
-<p>Book Your Bus Ticket Easily</p>
+<p>Travel Across Indonesia Easily</p>
 
 </div>
 
 <div class="container">
 
-<div class="search-box">
+<div class="search-card">
 
 <form action="/schedules.html">
 
-<div class="row">
+<div class="row g-3 align-items-end">
 
 <div class="col-md-4 position-relative">
 
@@ -84,6 +96,14 @@ required
 >
 
 <div id="fromList" class="autocomplete-box"></div>
+
+</div>
+
+<div class="col-md-1 text-center">
+
+<button type="button" class="btn btn-light swap-btn" onclick="swapCities()">
+⇄
+</button>
 
 </div>
 
@@ -105,7 +125,7 @@ required
 
 </div>
 
-<div class="col-md-3">
+<div class="col-md-2">
 
 <label>Date</label>
 
@@ -115,8 +135,6 @@ required
 
 <div class="col-md-1 d-grid">
 
-<label>&nbsp;</label>
-
 <button class="btn btn-primary">Search</button>
 
 </div>
@@ -125,6 +143,30 @@ required
 
 </form>
 
+<hr>
+
+<h6>Popular Routes</h6>
+
+<div class="popular">
+
+<a href="/schedules.html?from=Jakarta&to=Bandung" class="badge bg-light text-dark p-2">
+Jakarta → Bandung
+</a>
+
+<a href="/schedules.html?from=Jakarta&to=Yogyakarta" class="badge bg-light text-dark p-2">
+Jakarta → Yogyakarta
+</a>
+
+<a href="/schedules.html?from=Surabaya&to=Malang" class="badge bg-light text-dark p-2">
+Surabaya → Malang
+</a>
+
+<a href="/schedules.html?from=Denpasar&to=Surabaya" class="badge bg-light text-dark p-2">
+Denpasar → Surabaya
+</a>
+
+</div>
+
 </div>
 
 </div>
@@ -132,7 +174,6 @@ required
 <script>
 
 const cities = [
-
 "Jakarta",
 "Bandung",
 "Surabaya",
@@ -141,12 +182,11 @@ const cities = [
 "Malang",
 "Denpasar",
 "Medan",
-"Palembang",
 "Makassar",
+"Palembang",
 "Bogor",
-"Tangerang",
-"Bekasi"
-
+"Bekasi",
+"Tangerang"
 ];
 
 function autocomplete(inputId,listId){
@@ -157,7 +197,7 @@ const list = document.getElementById(listId);
 input.addEventListener("input",function(){
 
 let value = this.value.toLowerCase();
-list.innerHTML = "";
+list.innerHTML="";
 
 if(!value) return;
 
@@ -165,12 +205,12 @@ cities.forEach(city=>{
 
 if(city.toLowerCase().includes(value)){
 
-let div = document.createElement("div");
+let div=document.createElement("div");
 div.classList.add("autocomplete-item");
-div.innerText = city;
+div.innerText=city;
 
-div.onclick = ()=>{
-input.value = city;
+div.onclick=()=>{
+input.value=city;
 list.innerHTML="";
 }
 
@@ -184,7 +224,7 @@ list.appendChild(div);
 
 document.addEventListener("click",function(e){
 
-if(e.target != input){
+if(e.target!=input){
 
 list.innerHTML="";
 
@@ -196,6 +236,17 @@ list.innerHTML="";
 
 autocomplete("from","fromList");
 autocomplete("to","toList");
+
+function swapCities(){
+
+let from=document.getElementById("from");
+let to=document.getElementById("to");
+
+let temp=from.value;
+from.value=to.value;
+to.value=temp;
+
+}
 
 </script>
 
