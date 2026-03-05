@@ -13,7 +13,7 @@ background:#f5f6fa;
 }
 
 .bus{
-width:320px;
+width:340px;
 margin:auto;
 background:white;
 padding:20px;
@@ -56,6 +56,27 @@ background:#f1c40f;
 width:20px;
 }
 
+.legend{
+text-align:center;
+margin-top:20px;
+font-size:14px;
+}
+
+.legend span{
+display:inline-block;
+width:18px;
+height:18px;
+border-radius:4px;
+margin-right:5px;
+}
+
+.trip-info{
+text-align:center;
+font-size:14px;
+color:#555;
+margin-bottom:15px;
+}
+
 </style>
 
 </head>
@@ -64,7 +85,11 @@ width:20px;
 
 <div class="container mt-5">
 
-<h3 class="text-center mb-4">Select Your Seat</h3>
+<h3 class="text-center mb-2">Select Your Seat</h3>
+
+<div id="tripInfo" class="trip-info">
+Loading trip info...
+</div>
 
 <div class="bus">
 
@@ -89,6 +114,16 @@ Book This Seat
 
 </div>
 
+<div class="legend">
+
+<span style="background:#2ecc71"></span> Available
+
+<span style="background:#e74c3c;margin-left:20px"></span> Booked
+
+<span style="background:#f1c40f;margin-left:20px"></span> Selected
+
+</div>
+
 </div>
 
 <script>
@@ -102,6 +137,28 @@ let selectedSeat = null;
 
 const urlParams = new URLSearchParams(window.location.search);
 const scheduleId = urlParams.get("schedule");
+
+/* LOAD TRIP INFO */
+
+async function loadTripInfo(){
+
+const res = await fetch("/schedules");
+const schedules = await res.json();
+
+const trip = schedules.find(s => s.id == scheduleId);
+
+if(trip){
+
+document.getElementById("tripInfo").innerHTML = `
+<b>${trip.origin} → ${trip.destination}</b><br>
+Bus: ${trip.bus_name} | Price: Rp ${trip.price}
+`;
+
+}
+
+}
+
+/* GENERATE SEATS */
 
 function generateSeats(bookedSeats = []){
 
@@ -156,6 +213,8 @@ seatContainer.appendChild(rowDiv);
 
 }
 
+/* LOAD BOOKED SEATS */
+
 async function loadSeats(){
 
 const res = await fetch(`/api/booked-seats/${scheduleId}`);
@@ -165,7 +224,7 @@ generateSeats(bookedSeats);
 
 }
 
-loadSeats();
+/* BOOK SEAT */
 
 async function bookSeat(){
 
@@ -205,6 +264,9 @@ alert(data.message);
 window.location="my-bookings.html";
 
 }
+
+loadTripInfo();
+loadSeats();
 
 </script>
 
