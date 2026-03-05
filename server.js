@@ -356,11 +356,13 @@ b.seat_number,
 s.price,
 r.origin,
 r.destination,
-bus.name as bus_name
+bus.name as bus_name,
+u.name as passenger
 FROM bookings b
 JOIN schedules s ON b.schedule_id=s.id
 JOIN routes r ON s.route_id=r.id
 JOIN buses bus ON s.bus_id=bus.id
+JOIN users u ON b.user_id=u.id
 WHERE b.id=?
 `, [bookingId]);
 
@@ -374,42 +376,55 @@ const ticket = rows[0];
 
 const doc = new PDFDocument({
 size: "A4",
-margin: 50
+margin: 40
 });
 
 res.setHeader("Content-Type", "application/pdf");
-res.setHeader("Content-Disposition", "attachment; filename=ticket.pdf");
+res.setHeader("Content-Disposition", "attachment; filename=boarding-pass.pdf");
 
 doc.pipe(res);
 
 /* HEADER */
 
-doc.rect(0, 0, 600, 90).fill("#315B4F");
+doc.rect(0,0,600,90).fill("#27ae60");
 
 doc.fillColor("white")
-.fontSize(24)
-.text("SAWAH JAYA BUS", 50, 35);
+.fontSize(28)
+.text("SAWAH JAYA BUS",40,35);
 
-/* BODY */
+doc.fontSize(14)
+.text("BOARDING PASS",430,45);
 
-doc.moveDown(4);
+/* ROUTE */
+
+doc.moveDown(3);
 
 doc.fillColor("black");
 
-doc.fontSize(20).text(
-`${ticket.origin} → ${ticket.destination}`,
-{ align: "center" }
-);
+doc.fontSize(22)
+.text(`${ticket.origin} → ${ticket.destination}`,{
+align:"center"
+});
+
+/* INFO BOX */
 
 doc.moveDown(2);
 
+doc.rect(40,200,520,120).stroke();
+
 doc.fontSize(14);
 
-doc.text(`Bus : ${ticket.bus_name}`);
-doc.text(`Seat : ${ticket.seat_number}`);
-doc.text(`Price : Rp ${ticket.price}`);
+doc.text("Passenger",60,220);
+doc.text(ticket.passenger,60,240);
 
-doc.moveDown();
+doc.text("Bus",250,220);
+doc.text(ticket.bus_name,250,240);
+
+doc.text("Seat",420,220);
+doc.text(ticket.seat_number,420,240);
+
+doc.text("Price",60,270);
+doc.text(`Rp ${ticket.price}`,60,290);
 
 /* QR CODE */
 
@@ -417,17 +432,16 @@ const qrData = `TICKET-${ticket.id}-SEAT-${ticket.seat_number}`;
 
 const qrImage = await QRCode.toDataURL(qrData);
 
-doc.image(qrImage, {
-fit: [150, 150],
-align: "center"
+doc.image(qrImage,230,360,{
+fit:[150,150]
 });
 
-doc.moveDown();
+doc.moveDown(8);
 
 doc.fontSize(12)
-.fillColor("#315B4F")
-.text("Scan QR ini saat boarding", {
-align: "center"
+.fillColor("#555")
+.text("Show this QR code when boarding the bus",{
+align:"center"
 });
 
 doc.end();
