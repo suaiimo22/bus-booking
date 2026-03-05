@@ -91,6 +91,14 @@ Driver
 Selected Seat:
 <strong id="selectedSeat">None</strong>
 
+<div class="text-center mt-3">
+
+<button class="btn btn-success" onclick="bookSeat()">
+Book This Seat
+</button>
+
+</div>
+
 </div>
 
 </div>
@@ -114,6 +122,50 @@ Selected Seat:
 </div>
 
 <script src="seat-layout.js"></script>
+
+<script>
+
+async function bookSeat(){
+
+const token = localStorage.getItem("token");
+
+if(!token){
+alert("Silakan login dulu");
+window.location = "login.html";
+return;
+}
+
+const urlParams = new URLSearchParams(window.location.search);
+const scheduleId = urlParams.get("schedule");
+
+const seat = document.getElementById("selectedSeat").innerText;
+
+if(seat === "None"){
+alert("Pilih seat dulu");
+return;
+}
+
+const res = await fetch("/bookings",{
+method:"POST",
+headers:{
+"Content-Type":"application/json",
+"Authorization":"Bearer " + token
+},
+body:JSON.stringify({
+schedule_id:scheduleId,
+seat_number:seat
+})
+});
+
+const data = await res.json();
+
+alert(data.message);
+
+window.location = "my-bookings.html";
+
+}
+
+</script>
 
 </body>
 </html>
