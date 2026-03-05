@@ -136,6 +136,34 @@ error: err.message
 
 });
 
+/* ================= CITY AUTOCOMPLETE ================= */
+
+app.get("/api/cities", async (req, res) => {
+
+try {
+
+const q = "%" + (req.query.q || "") + "%";
+
+const [rows] = await db.query(`
+SELECT name, province
+FROM cities
+WHERE name LIKE ?
+LIMIT 10
+`, [q]);
+
+res.json(rows);
+
+} catch (err) {
+
+res.status(500).json({
+message: "Error ambil kota",
+error: err.message
+});
+
+}
+
+});
+
 /* ================= GET SCHEDULES ================= */
 
 app.get("/schedules", async (req, res) => {
@@ -460,6 +488,27 @@ error: err.message
 /* ================= ADMIN ROUTES ================= */
 
 app.use(adminRoutes);
+
+/* ================= CREATE CITIES TABLE ================= */
+
+db.query(`
+CREATE TABLE IF NOT EXISTS cities (
+id INT AUTO_INCREMENT PRIMARY KEY,
+name VARCHAR(100),
+province VARCHAR(100)
+)
+`);
+
+db.query(`
+INSERT INTO cities (name, province) VALUES
+('Jakarta','DKI Jakarta'),
+('Bandung','Jawa Barat'),
+('Surabaya','Jawa Timur'),
+('Denpasar','Bali'),
+('Yogyakarta','DI Yogyakarta'),
+('Semarang','Jawa Tengah'),
+('Malang','Jawa Timur')
+`);
 
 /* ================= AUTO EXPIRE ================= */
 
