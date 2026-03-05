@@ -4,158 +4,198 @@
 
 <title>Sawah Jaya Bus</title>
 
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
 
 <style>
 
 body{
-background:#f5f6fa;
+background:#f4f6f9;
+font-family:Segoe UI;
 }
 
-/* HERO */
-
 .hero{
-background:linear-gradient(135deg,#27ae60,#2ecc71);
+background:linear-gradient(135deg,#0d6efd,#0dcaf0);
 color:white;
-padding:120px 20px;
+padding:60px 20px;
 text-align:center;
 }
 
-.hero h1{
-font-weight:bold;
-}
-
-/* SEARCH BOX */
-
 .search-box{
 background:white;
-padding:30px;
+padding:25px;
 border-radius:12px;
-margin-top:-60px;
+margin-top:-40px;
 box-shadow:0 10px 25px rgba(0,0,0,0.1);
 }
 
-/* FOOTER */
+.autocomplete-box{
+position:absolute;
+background:white;
+border:1px solid #ddd;
+width:100%;
+max-height:200px;
+overflow-y:auto;
+z-index:999;
+}
 
-footer{
-margin-top:80px;
+.autocomplete-item{
+padding:10px;
+cursor:pointer;
+}
+
+.autocomplete-item:hover{
+background:#f1f1f1;
 }
 
 </style>
 
 </head>
-
 <body>
-
-<!-- NAVBAR -->
-
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-
-<div class="container">
-
-<a class="navbar-brand fw-bold">🚌 Sawah Jaya Bus</a>
-
-<div>
-
-<a href="index.html" class="btn btn-outline-light btn-sm me-2">Home</a>
-
-<a href="my-bookings.html" class="btn btn-success btn-sm me-2">
-My Tickets
-</a>
-
-<a href="login.html" class="btn btn-light btn-sm">
-Login
-</a>
-
-</div>
-
-</div>
-
-</nav>
-
-<!-- HERO -->
 
 <div class="hero">
 
-<h1>Book Bus Tickets Easily</h1>
-
-<p class="lead">
-Travel across cities with comfort and safety
-</p>
+<h1>Sawah Jaya Bus</h1>
+<p>Book Your Bus Ticket Easily</p>
 
 </div>
-
-<!-- SEARCH -->
 
 <div class="container">
 
 <div class="search-box">
 
-<h4 class="mb-4">Search Bus</h4>
+<form action="/schedules.html">
 
-<div class="row g-3">
+<div class="row">
 
-<div class="col-md-3">
+<div class="col-md-4 position-relative">
+
 <label>From</label>
-<input id="origin" class="form-control" placeholder="City">
+
+<input
+type="text"
+class="form-control"
+id="from"
+name="from"
+placeholder="Departure city"
+autocomplete="off"
+required
+>
+
+<div id="fromList" class="autocomplete-box"></div>
+
+</div>
+
+<div class="col-md-4 position-relative">
+
+<label>To</label>
+
+<input
+type="text"
+class="form-control"
+id="to"
+name="to"
+placeholder="Destination city"
+autocomplete="off"
+required
+>
+
+<div id="toList" class="autocomplete-box"></div>
+
 </div>
 
 <div class="col-md-3">
-<label>To</label>
-<input id="destination" class="form-control" placeholder="City">
-</div>
 
-<div class="col-md-2">
 <label>Date</label>
-<input id="date" type="date" class="form-control">
+
+<input type="date" name="date" class="form-control" required>
+
 </div>
 
-<div class="col-md-2">
-<label>Time</label>
-<input id="time" type="time" class="form-control">
-</div>
+<div class="col-md-1 d-grid">
 
-<div class="col-md-1">
-<label>Passengers</label>
-<input id="passengers" type="number" min="1" value="1" class="form-control">
-</div>
+<label>&nbsp;</label>
 
-<div class="col-md-1 d-flex align-items-end">
-<button class="btn btn-success w-100" onclick="searchBus()">
-Search
-</button>
-</div>
+<button class="btn btn-primary">Search</button>
 
 </div>
 
 </div>
 
+</form>
+
 </div>
 
-<!-- FOOTER -->
-
-<footer class="bg-dark text-white text-center p-3">
-
-<p class="mb-0">
-© 2026 Sawah Jaya Bus • Online Bus Ticket Booking
-</p>
-
-</footer>
+</div>
 
 <script>
 
-function searchBus(){
+const cities = [
 
-const origin = document.getElementById("origin").value;
-const destination = document.getElementById("destination").value;
-const date = document.getElementById("date").value;
-const time = document.getElementById("time").value;
-const passengers = document.getElementById("passengers").value;
+"Jakarta",
+"Bandung",
+"Surabaya",
+"Yogyakarta",
+"Semarang",
+"Malang",
+"Denpasar",
+"Medan",
+"Palembang",
+"Makassar",
+"Bogor",
+"Tangerang",
+"Bekasi"
 
-window.location =
-`schedules.html?origin=${origin}&destination=${destination}&date=${date}&time=${time}&passengers=${passengers}`;
+];
+
+function autocomplete(inputId,listId){
+
+const input = document.getElementById(inputId);
+const list = document.getElementById(listId);
+
+input.addEventListener("input",function(){
+
+let value = this.value.toLowerCase();
+list.innerHTML = "";
+
+if(!value) return;
+
+cities.forEach(city=>{
+
+if(city.toLowerCase().includes(value)){
+
+let div = document.createElement("div");
+div.classList.add("autocomplete-item");
+div.innerText = city;
+
+div.onclick = ()=>{
+input.value = city;
+list.innerHTML="";
+}
+
+list.appendChild(div);
 
 }
+
+});
+
+});
+
+document.addEventListener("click",function(e){
+
+if(e.target != input){
+
+list.innerHTML="";
+
+}
+
+});
+
+}
+
+autocomplete("from","fromList");
+autocomplete("to","toList");
 
 </script>
 
