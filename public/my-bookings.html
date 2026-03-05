@@ -15,32 +15,95 @@ background:#f4f6f9;
 font-family:Segoe UI;
 }
 
-.card{
+/* NAVBAR */
+
+.navbar{
+margin-bottom:30px;
+}
+
+/* TICKET CARD */
+
+.ticket-card{
 border:none;
-border-radius:10px;
+border-radius:14px;
+padding:20px;
+background:white;
+box-shadow:0 6px 18px rgba(0,0,0,0.08);
+margin-bottom:20px;
+transition:0.2s;
+}
+
+.ticket-card:hover{
+transform:translateY(-3px);
+}
+
+/* ROUTE */
+
+.route{
+font-size:20px;
+font-weight:bold;
+}
+
+/* PRICE */
+
+.price{
+font-weight:bold;
+color:#27ae60;
+}
+
+/* FOOTER */
+
+footer{
+margin-top:80px;
 }
 
 </style>
 
 </head>
 
-<body class="p-4">
+<body>
+
+<!-- NAVBAR -->
+
+<nav class="navbar navbar-dark bg-dark">
 
 <div class="container">
 
-<div class="d-flex justify-content-between mb-4">
+<a class="navbar-brand fw-bold">🚌 Sawah Jaya Bus</a>
 
-<h3>My Bookings</h3>
+<div>
 
-<a href="/index.html" class="btn btn-secondary">
-Back
+<a href="index.html" class="btn btn-outline-light btn-sm me-2">
+Home
+</a>
+
+<a href="schedules.html" class="btn btn-outline-light btn-sm me-2">
+Search Bus
 </a>
 
 </div>
 
+</div>
+
+</nav>
+
+<div class="container">
+
+<h3 class="mb-4">My Bookings</h3>
+
 <div id="bookingList"></div>
 
 </div>
+
+<!-- FOOTER -->
+
+<footer class="bg-dark text-white text-center p-3">
+
+<p class="mb-0">
+© 2026 Sawah Jaya Bus • Online Bus Ticket Booking
+</p>
+
+</footer>
 
 <script>
 
@@ -81,21 +144,29 @@ data.forEach(b=>{
 
 container.innerHTML += `
 
-<div class="card p-3 mb-3 shadow-sm">
+<div class="ticket-card">
 
-<h5>${b.origin} → ${b.destination}</h5>
+<div class="route">
+${b.origin} → ${b.destination}
+</div>
 
-<p class="mb-1">Bus: ${b.bus_name}</p>
+<p class="mb-1">
+Bus: <b>${b.bus_name}</b>
+</p>
 
-<p class="mb-1">Seat: ${b.seat_number}</p>
+<p class="mb-1">
+Seat: <b>${b.seat_number}</b>
+</p>
 
-<p class="mb-1">Price: Rp ${b.price}</p>
+<p class="price">
+Rp ${b.price}
+</p>
 
 <p class="mb-3">
 Status:
-<b class="${b.status === 'PAID' ? 'text-success' : 'text-warning'}">
+<span class="badge ${b.status === 'PAID' ? 'bg-success' : 'bg-warning'}">
 ${b.status}
-</b>
+</span>
 </p>
 
 <div class="d-flex gap-2">
@@ -103,7 +174,7 @@ ${b.status}
 ${b.status === "PENDING" ? `
 <button onclick="payBooking(${b.id})"
 class="btn btn-primary btn-sm">
-Pay
+Pay Now
 </button>
 ` : ""}
 
