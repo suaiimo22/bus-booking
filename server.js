@@ -20,116 +20,129 @@ const adminRoutes = require("./routes/adminRoutes");
 
 app.use(
 helmet({
-contentSecurityPolicy: false
+contentSecurityPolicy:false
 })
 );
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, "public")));
+app.use(express.urlencoded({ extended:true }));
+
+app.use(express.static(path.join(__dirname,"public")));
 
 /* ================= ROOT ================= */
 
-app.get("/", (req, res) => {
+app.get("/",(req,res)=>{
 res.json({
-status: "ok",
-message: "Bus Booking API running 🚀"
+status:"ok",
+message:"Sawah Jaya Travel API running 🚀"
 });
 });
 
 /* ================= REGISTER ================= */
 
-app.post("/register", async (req, res) => {
-try {
+app.post("/register",async(req,res)=>{
 
-const { name, email, user_password } = req.body;
+try{
 
-if (!name || !email || !user_password) {
+const {name,email,password}=req.body;
+
+if(!name || !email || !password){
 return res.status(400).json({
-message: "Semua field wajib diisi"
+message:"Semua field wajib diisi"
 });
 }
 
-const [existing] = await db.query(
+const [existing]=await db.query(
 `SELECT id FROM users WHERE email=?`,
 [email]
 );
 
-if (existing.length) {
+if(existing.length){
 return res.status(400).json({
-message: "Email sudah terdaftar"
+message:"Email sudah terdaftar"
 });
 }
 
-const hashed = await bcrypt.hash(user_password, 10);
+const hashed = await bcrypt.hash(password,10);
 
 await db.query(
-`INSERT INTO users (name,email,password,role) VALUES (?,?,?,'user')`,
-[name, email, hashed]
+`INSERT INTO users (name,email,password,role)
+VALUES (?,?,?,'user')`,
+[name,email,hashed]
 );
 
-res.json({ message: "Register berhasil" });
+res.json({
+message:"Register berhasil"
+});
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Server error",
-error: err.message
+message:"Server error",
+error:err.message
 });
 
 }
+
 });
 
 /* ================= LOGIN ================= */
 
-app.post("/login", async (req, res) => {
+app.post("/login",async(req,res)=>{
 
-try {
+try{
 
-const { email, password } = req.body;
+const {email,password}=req.body;
 
-const [rows] = await db.query(
+if(!email || !password){
+return res.status(400).json({
+message:"Email dan password wajib"
+});
+}
+
+const [rows]=await db.query(
 `SELECT * FROM users WHERE email=?`,
 [email]
 );
 
-if (!rows.length) {
+if(!rows.length){
 return res.status(400).json({
-message: "User tidak ditemukan"
+message:"User tidak ditemukan"
 });
 }
 
-const user = rows[0];
+const user=rows[0];
 
-const match = await bcrypt.compare(password, user.password);
+const match = await bcrypt.compare(password,user.password);
 
-if (!match) {
+if(!match){
 return res.status(400).json({
-message: "Password salah"
+message:"Password salah"
 });
 }
 
 const token = jwt.sign(
 {
-id: user.id,
-role: user.role
+id:user.id,
+role:user.role
 },
 process.env.SECRET_KEY,
 {
-expiresIn: "1h"
+expiresIn:"1h"
 }
 );
 
 res.json({
-message: "Login berhasil",
+message:"Login berhasil",
 token
 });
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Server error",
-error: err.message
+message:"Server error",
+error:err.message
 });
 
 }
@@ -138,9 +151,9 @@ error: err.message
 
 /* ================= CITY AUTOCOMPLETE ================= */
 
-app.get("/api/cities", async (req, res) => {
+app.get("/api/cities",async(req,res)=>{
 
-try {
+try{
 
 const q = "%" + (req.query.q || "") + "%";
 
@@ -149,28 +162,28 @@ SELECT name, province
 FROM cities
 WHERE name LIKE ?
 LIMIT 10
-`, [q]);
+`,[q]);
 
 res.json(rows);
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Error ambil kota",
-error: err.message
+message:"Error ambil kota",
+error:err.message
 });
 
 }
 
 });
 
-/* ================= GET SCHEDULES ================= */
+/* ================= BUS SCHEDULES ================= */
 
-app.get("/schedules", async (req, res) => {
+app.get("/schedules",async(req,res)=>{
 
-try {
+try{
 
-const [results] = await db.query(`
+const [results]=await db.query(`
 SELECT
 s.id,
 s.price,
@@ -188,11 +201,11 @@ ORDER BY s.id DESC
 
 res.json(results);
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Query schedules gagal",
-error: err.message
+message:"Query schedules gagal",
+error:err.message
 });
 
 }
@@ -201,45 +214,52 @@ error: err.message
 
 /* ================= CREATE BOOKING ================= */
 
-app.post("/bookings", verifyToken, async (req, res) => {
+app.post("/bookings",verifyToken,async(req,res)=>{
 
-try {
+try{
 
-const { schedule_id, seat_number } = req.body;
-const user_id = req.user.id;
+const {schedule_id,seat_number}=req.body;
+const user_id=req.user.id;
 
-const [seatCheck] = await db.query(`
-SELECT * FROM bookings
-WHERE schedule_id=?
-AND seat_number=?
-AND status IN ('PENDING','PAID')
-AND (expired_at IS NULL OR expired_at>NOW())
-`, [schedule_id, seat_number]);
-
-if (seatCheck.length) {
+if(!schedule_id || !seat_number){
 return res.status(400).json({
-message: "Seat sudah dibooking"
+message:"Schedule dan seat wajib"
 });
 }
 
-const expiredAt = new Date(Date.now() + 15 * 60 * 1000);
+const [seatCheck]=await db.query(`
+SELECT id
+FROM bookings
+WHERE schedule_id=?
+AND seat_number=?
+AND status IN ('PENDING','PAID')
+AND (expired_at IS NULL OR expired_at > NOW())
+`,[schedule_id,seat_number]);
 
-const [result] = await db.query(`
+if(seatCheck.length){
+return res.status(400).json({
+message:"Seat sudah dibooking"
+});
+}
+
+const expiredAt=new Date(Date.now()+15*60*1000);
+
+const [result]=await db.query(`
 INSERT INTO bookings
 (user_id,schedule_id,seat_number,status,expired_at)
 VALUES (?,?,?,'PENDING',?)
-`, [user_id, schedule_id, seat_number, expiredAt]);
+`,[user_id,schedule_id,seat_number,expiredAt]);
 
 res.json({
-message: "Booking berhasil dibuat",
-bookingId: result.insertId
+message:"Booking berhasil dibuat",
+bookingId:result.insertId
 });
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Server error",
-error: err.message
+message:"Server error",
+error:err.message
 });
 
 }
@@ -248,13 +268,13 @@ error: err.message
 
 /* ================= MY BOOKINGS ================= */
 
-app.get("/my-bookings", verifyToken, async (req, res) => {
+app.get("/my-bookings",verifyToken,async(req,res)=>{
 
-try {
+try{
 
-const user_id = req.user.id;
+const user_id=req.user.id;
 
-const [rows] = await db.query(`
+const [rows]=await db.query(`
 SELECT
 b.id,
 b.seat_number,
@@ -270,46 +290,46 @@ JOIN routes r ON s.route_id=r.id
 JOIN buses bus ON s.bus_id=bus.id
 WHERE b.user_id=?
 ORDER BY b.id DESC
-`, [user_id]);
+`,[user_id]);
 
 res.json(rows);
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Error ambil booking",
-error: err.message
+message:"Error ambil booking",
+error:err.message
 });
 
 }
 
 });
 
-/* ================= GET BOOKED SEATS ================= */
+/* ================= BOOKED SEATS ================= */
 
-app.get("/api/booked-seats/:scheduleId", async (req, res) => {
+app.get("/api/booked-seats/:scheduleId",async(req,res)=>{
 
-try {
+try{
 
-const scheduleId = req.params.scheduleId;
+const scheduleId=req.params.scheduleId;
 
-const [rows] = await db.query(`
+const [rows]=await db.query(`
 SELECT seat_number
 FROM bookings
 WHERE schedule_id=?
 AND status IN ('PENDING','PAID')
 AND (expired_at IS NULL OR expired_at > NOW())
-`, [scheduleId]);
+`,[scheduleId]);
 
-const seats = rows.map(r => r.seat_number);
+const seats=rows.map(r=>r.seat_number);
 
 res.json(seats);
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Error ambil seat booking",
-error: err.message
+message:"Error ambil seat booking",
+error:err.message
 });
 
 }
@@ -318,34 +338,34 @@ error: err.message
 
 /* ================= PAYMENT ================= */
 
-app.post("/pay/:id", verifyToken, async (req, res) => {
+app.post("/pay/:id",verifyToken,async(req,res)=>{
 
-try {
+try{
 
-const bookingId = req.params.id;
+const bookingId=req.params.id;
 
-const [rows] = await db.query(
+const [rows]=await db.query(
 `SELECT * FROM bookings WHERE id=?`,
 [bookingId]
 );
 
-if (!rows.length) {
+if(!rows.length){
 return res.status(404).json({
-message: "Booking tidak ditemukan"
+message:"Booking tidak ditemukan"
 });
 }
 
-const booking = rows[0];
+const booking=rows[0];
 
-if (booking.user_id !== req.user.id) {
+if(booking.user_id !== req.user.id){
 return res.status(403).json({
-message: "Bukan booking milik Anda"
+message:"Bukan booking milik Anda"
 });
 }
 
-if (booking.status !== "PENDING") {
+if(booking.status !== "PENDING"){
 return res.status(400).json({
-message: "Booking tidak bisa dibayar"
+message:"Booking tidak bisa dibayar"
 });
 }
 
@@ -355,130 +375,72 @@ await db.query(
 );
 
 res.json({
-message: "Pembayaran berhasil ✅"
+message:"Pembayaran berhasil ✅"
 });
 
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Payment error",
-error: err.message
+message:"Payment error",
+error:err.message
 });
 
 }
 
 });
 
-/* ================= DOWNLOAD TICKET PDF ================= */
+/* ================= TOUR LIST ================= */
 
-app.get("/ticket/:id", verifyToken, async (req, res) => {
+app.get("/tours",async(req,res)=>{
 
-try {
+try{
 
-const bookingId = req.params.id;
+const [rows]=await db.query(`
+SELECT *
+FROM tours
+WHERE status='ACTIVE'
+ORDER BY id DESC
+`);
 
-const [rows] = await db.query(`
-SELECT
-b.id,
-b.seat_number,
-s.price,
-r.origin,
-r.destination,
-bus.name as bus_name,
-u.name as passenger
-FROM bookings b
-JOIN schedules s ON b.schedule_id=s.id
-JOIN routes r ON s.route_id=r.id
-JOIN buses bus ON s.bus_id=bus.id
-JOIN users u ON b.user_id=u.id
-WHERE b.id=?
-`, [bookingId]);
+res.json(rows);
 
-if (!rows.length) {
+}catch(err){
+
+res.status(500).json({
+message:"Error ambil tours",
+error:err.message
+});
+
+}
+
+});
+
+/* ================= TOUR DETAIL ================= */
+
+app.get("/tour/:slug",async(req,res)=>{
+
+try{
+
+const slug=req.params.slug;
+
+const [tour]=await db.query(
+`SELECT * FROM tours WHERE slug=?`,
+[slug]
+);
+
+if(!tour.length){
 return res.status(404).json({
-message: "Ticket tidak ditemukan"
+message:"Tour tidak ditemukan"
 });
 }
 
-const ticket = rows[0];
+res.json(tour[0]);
 
-const doc = new PDFDocument({
-size: "A4",
-margin: 40
-});
-
-res.setHeader("Content-Type", "application/pdf");
-res.setHeader("Content-Disposition", "attachment; filename=boarding-pass.pdf");
-
-doc.pipe(res);
-
-/* HEADER */
-
-doc.rect(0,0,600,90).fill("#27ae60");
-
-doc.fillColor("white")
-.fontSize(28)
-.text("SAWAH JAYA BUS",40,35);
-
-doc.fontSize(14)
-.text("BOARDING PASS",430,45);
-
-/* ROUTE */
-
-doc.moveDown(3);
-
-doc.fillColor("black");
-
-doc.fontSize(22)
-.text(`${ticket.origin} → ${ticket.destination}`,{
-align:"center"
-});
-
-/* INFO BOX */
-
-doc.moveDown(2);
-
-doc.rect(40,200,520,120).stroke();
-
-doc.fontSize(14);
-
-doc.text("Passenger",60,220);
-doc.text(ticket.passenger,60,240);
-
-doc.text("Bus",250,220);
-doc.text(ticket.bus_name,250,240);
-
-doc.text("Seat",420,220);
-doc.text(ticket.seat_number,420,240);
-
-doc.text("Price",60,270);
-doc.text(`Rp ${ticket.price}`,60,290);
-
-/* QR CODE */
-
-const qrData = `TICKET-${ticket.id}-SEAT-${ticket.seat_number}`;
-
-const qrImage = await QRCode.toDataURL(qrData);
-
-doc.image(qrImage,230,360,{
-fit:[150,150]
-});
-
-doc.moveDown(8);
-
-doc.fontSize(12)
-.fillColor("#555")
-.text("Show this QR code when boarding the bus",{
-align:"center"
-});
-
-doc.end();
-
-} catch (err) {
+}catch(err){
 
 res.status(500).json({
-message: "Error generate ticket",
-error: err.message
+message:"Error ambil detail tour",
+error:err.message
 });
 
 }
@@ -487,9 +449,9 @@ error: err.message
 
 /* ================= ADMIN ROUTES ================= */
 
-app.use(adminRoutes);
+app.use("/admin",adminRoutes);
 
-/* ================= CREATE CITIES TABLE ================= */
+/* ================= CREATE TABLES ================= */
 
 db.query(`
 CREATE TABLE IF NOT EXISTS cities (
@@ -500,24 +462,38 @@ province VARCHAR(100)
 `);
 
 db.query(`
-INSERT INTO cities (name, province) VALUES
-('Jakarta','DKI Jakarta'),
-('Bandung','Jawa Barat'),
-('Surabaya','Jawa Timur'),
-('Denpasar','Bali'),
-('Yogyakarta','DI Yogyakarta'),
-('Semarang','Jawa Tengah'),
-('Malang','Jawa Timur')
+CREATE TABLE IF NOT EXISTS tours (
+id INT AUTO_INCREMENT PRIMARY KEY,
+title VARCHAR(255),
+slug VARCHAR(255),
+location VARCHAR(255),
+duration VARCHAR(100),
+price INT,
+description TEXT,
+cover_image VARCHAR(255),
+status ENUM('ACTIVE','INACTIVE') DEFAULT 'ACTIVE',
+created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+)
 `);
 
-/* ================= AUTO EXPIRE ================= */
+/* ================= AUTO EXPIRE JOB ================= */
 
 startExpireJob();
+
+/* ================= GLOBAL ERROR HANDLER ================= */
+
+app.use((err,req,res,next)=>{
+console.error(err.stack);
+
+res.status(500).json({
+message:"Terjadi error di server"
+});
+});
 
 /* ================= START SERVER ================= */
 
 const PORT = process.env.PORT || 3000;
 
-app.listen(PORT, "0.0.0.0", () => {
-console.log("Server berjalan di port", PORT);
+app.listen(PORT,"0.0.0.0",()=>{
+console.log("Server berjalan di port",PORT);
 });
