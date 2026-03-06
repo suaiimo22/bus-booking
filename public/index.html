@@ -2,7 +2,7 @@
 <html>
 <head>
 
-<title>Sawah Jaya Bus</title>
+<title>Sawah Jaya Travel</title>
 
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
@@ -16,10 +16,26 @@ font-family:Segoe UI;
 }
 
 .hero{
-background:linear-gradient(135deg,#0d6efd,#0dcaf0);
+background:url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e") center/cover;
 color:white;
-padding:80px 20px;
+padding:120px 20px;
 text-align:center;
+position:relative;
+}
+
+.hero::before{
+content:"";
+position:absolute;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.4);
+}
+
+.hero-content{
+position:relative;
+z-index:2;
 }
 
 .search-card{
@@ -56,9 +72,13 @@ cursor:pointer;
 background:#f1f1f1;
 }
 
-.popular a{
-text-decoration:none;
-margin-right:15px;
+.section{
+padding:70px 0;
+}
+
+.destination-card img{
+height:200px;
+object-fit:cover;
 }
 
 </style>
@@ -66,14 +86,23 @@ margin-right:15px;
 </head>
 <body>
 
+<!-- HERO -->
+
 <div class="hero">
 
-<h1>Sawah Jaya Bus</h1>
-<p>Travel Across Indonesia Easily</p>
+<div class="hero-content">
+
+<h1 class="display-5 fw-bold">Explore Indonesia With Us</h1>
+
+<p>Book tours, travel experiences and trips easily</p>
+
+</div>
 
 </div>
 
 <div class="container">
+
+<!-- SEARCH -->
 
 <div class="search-card">
 
@@ -109,14 +138,14 @@ required
 
 <div class="col-md-4 position-relative">
 
-<label>To</label>
+<label>Destination</label>
 
 <input
 type="text"
 class="form-control"
 id="to"
 name="to"
-placeholder="Destination city"
+placeholder="Travel destination"
 autocomplete="off"
 required
 >
@@ -127,7 +156,7 @@ required
 
 <div class="col-md-2">
 
-<label>Date</label>
+<label>Travel Date</label>
 
 <input type="date" name="date" class="form-control" required>
 
@@ -145,29 +174,199 @@ required
 
 <hr>
 
-<h6>Popular Routes</h6>
+<h6>Popular Trips</h6>
 
 <div class="popular">
 
-<a href="/schedules.html?from=Jakarta&to=Bandung" class="badge bg-light text-dark p-2">
-Jakarta → Bandung
+<a href="/schedules.html?from=Jakarta&to=Bali" class="badge bg-light text-dark p-2">
+Jakarta → Bali
 </a>
 
 <a href="/schedules.html?from=Jakarta&to=Yogyakarta" class="badge bg-light text-dark p-2">
 Jakarta → Yogyakarta
 </a>
 
-<a href="/schedules.html?from=Surabaya&to=Malang" class="badge bg-light text-dark p-2">
-Surabaya → Malang
+<a href="/schedules.html?from=Surabaya&to=Bromo" class="badge bg-light text-dark p-2">
+Surabaya → Bromo
 </a>
 
-<a href="/schedules.html?from=Denpasar&to=Surabaya" class="badge bg-light text-dark p-2">
-Denpasar → Surabaya
+<a href="/schedules.html?from=Denpasar&to=Labuan Bajo" class="badge bg-light text-dark p-2">
+Denpasar → Labuan Bajo
 </a>
 
 </div>
 
 </div>
+
+</div>
+
+<!-- DESTINATIONS -->
+
+<div class="container section">
+
+<h3 class="mb-4">Popular Destinations</h3>
+
+<div class="row g-4">
+
+<div class="col-md-3">
+
+<div class="card destination-card">
+
+<img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Bali</h5>
+
+<p>Island of Gods</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3">
+
+<div class="card destination-card">
+
+<img src="https://images.unsplash.com/photo-1549887534-3ec93abae3f1" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Labuan Bajo</h5>
+
+<p>Komodo Island Trip</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3">
+
+<div class="card destination-card">
+
+<img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Mount Bromo</h5>
+
+<p>Volcano Adventure</p>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-3">
+
+<div class="card destination-card">
+
+<img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Raja Ampat</h5>
+
+<p>Paradise Diving</p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- TOUR PACKAGES -->
+
+<div class="container section">
+
+<h3 class="mb-4">Featured Tours</h3>
+
+<div class="row g-4">
+
+<div class="col-md-4">
+
+<div class="card shadow">
+
+<img src="https://images.unsplash.com/photo-1507525428034-b723cf961d3e" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Bali Adventure 3D2N</h5>
+
+<p>Hotel + Tour Guide</p>
+
+<h4>$120</h4>
+
+<button class="btn btn-primary">Book Now</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card shadow">
+
+<img src="https://images.unsplash.com/photo-1526778548025-fa2f459cd5c1" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Labuan Bajo 3D2N</h5>
+
+<p>Boat + Snorkeling</p>
+
+<h4>$230</h4>
+
+<button class="btn btn-primary">Book Now</button>
+
+</div>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card shadow">
+
+<img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee" class="card-img-top">
+
+<div class="card-body">
+
+<h5>Bromo Sunrise Trip</h5>
+
+<p>Jeep + Guide</p>
+
+<h4>$90</h4>
+
+<button class="btn btn-primary">Book Now</button>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<!-- FOOTER -->
+
+<div class="bg-dark text-white text-center p-4">
+
+<p>© 2026 Sawah Jaya Travel</p>
 
 </div>
 
