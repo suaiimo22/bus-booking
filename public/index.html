@@ -15,10 +15,19 @@ background:#f4f6f9;
 font-family:Segoe UI;
 }
 
+/* NAVBAR */
+
+.navbar-brand{
+font-weight:700;
+color:#0d6efd !important;
+}
+
+/* HERO */
+
 .hero{
 background:url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e") center/cover;
 color:white;
-padding:120px 20px;
+padding:140px 20px;
 text-align:center;
 position:relative;
 }
@@ -30,7 +39,7 @@ top:0;
 left:0;
 width:100%;
 height:100%;
-background:rgba(0,0,0,0.4);
+background:rgba(0,0,0,0.45);
 }
 
 .hero-content{
@@ -38,20 +47,30 @@ position:relative;
 z-index:2;
 }
 
+.hero h1{
+font-weight:700;
+}
+
+/* SEARCH CARD */
+
 .search-card{
 background:white;
 padding:30px;
-border-radius:12px;
+border-radius:14px;
 margin-top:-60px;
-box-shadow:0 15px 40px rgba(0,0,0,0.1);
+box-shadow:0 20px 45px rgba(0,0,0,0.15);
 }
 
+/* SWAP BUTTON */
+
 .swap-btn{
-font-size:22px;
+font-size:20px;
 border-radius:50%;
 width:45px;
 height:45px;
 }
+
+/* AUTOCOMPLETE */
 
 .autocomplete-box{
 position:absolute;
@@ -72,20 +91,45 @@ cursor:pointer;
 background:#f1f1f1;
 }
 
-.section{
-padding:70px 0;
+/* DESTINATION CARD */
+
+.destination-card{
+border:none;
+border-radius:15px;
+overflow:hidden;
+transition:0.3s;
+cursor:pointer;
 }
 
 .destination-card img{
 height:200px;
 object-fit:cover;
+transition:0.4s;
+}
+
+.destination-card:hover{
+transform:translateY(-6px);
+box-shadow:0 20px 40px rgba(0,0,0,0.15);
+}
+
+.destination-card:hover img{
+transform:scale(1.1);
+}
+
+.section{
+padding:70px 0;
+}
+
+.popular a{
+text-decoration:none;
+margin-right:10px;
 }
 
 </style>
 
 </head>
-
 <body>
+
 
 <!-- NAVBAR -->
 
@@ -93,14 +137,12 @@ object-fit:cover;
 
 <div class="container">
 
-<a class="navbar-brand fw-bold text-primary" href="/">
+<a class="navbar-brand" href="/">
 Sawah Jaya Travel
 </a>
 
 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-
 <span class="navbar-toggler-icon"></span>
-
 </button>
 
 <div class="collapse navbar-collapse" id="navbarNav">
@@ -125,7 +167,7 @@ Sawah Jaya Travel
 
 </ul>
 
-<div class="d-flex">
+<div>
 
 <a href="/my-bookings.html" class="btn btn-outline-primary me-2">
 My Booking
@@ -144,22 +186,20 @@ Login
 </nav>
 
 
-<div class="hero">
-    
-    
 <!-- HERO -->
 
 <div class="hero">
 
 <div class="hero-content">
 
-<h1 class="display-5 fw-bold">Explore Indonesia Tourism With Us</h1>
+<h1>Explore Indonesia With Us</h1>
 
 <p>Book tours, travel experiences and trips easily</p>
 
 </div>
 
 </div>
+
 
 <div class="container">
 
@@ -261,11 +301,12 @@ Denpasar → Labuan Bajo
 
 </div>
 
+
 <!-- DESTINATIONS -->
 
 <div class="container section">
 
-<h3 class="mb-4">Popular Destinations</h3>
+<h3 class="text-center mb-5">Popular Destinations</h3>
 
 <div class="row g-4">
 
@@ -275,11 +316,11 @@ Denpasar → Labuan Bajo
 
 <img src="https://images.unsplash.com/photo-1537996194471-e657df975ab4" class="card-img-top">
 
-<div class="card-body">
+<div class="card-body text-center">
 
 <h5>Bali</h5>
 
-<p>Island of Gods</p>
+<p class="text-muted">120 Tours Available</p>
 
 </div>
 
@@ -293,11 +334,11 @@ Denpasar → Labuan Bajo
 
 <img src="https://images.unsplash.com/photo-1549887534-3ec93abae3f1" class="card-img-top">
 
-<div class="card-body">
+<div class="card-body text-center">
 
 <h5>Labuan Bajo</h5>
 
-<p>Komodo Island Trip</p>
+<p class="text-muted">45 Tours Available</p>
 
 </div>
 
@@ -311,11 +352,11 @@ Denpasar → Labuan Bajo
 
 <img src="https://images.unsplash.com/photo-1501785888041-af3ef285b470" class="card-img-top">
 
-<div class="card-body">
+<div class="card-body text-center">
 
 <h5>Mount Bromo</h5>
 
-<p>Volcano Adventure</p>
+<p class="text-muted">60 Tours Available</p>
 
 </div>
 
@@ -329,11 +370,11 @@ Denpasar → Labuan Bajo
 
 <img src="https://images.unsplash.com/photo-1558981403-c5f9899a28bc" class="card-img-top">
 
-<div class="card-body">
+<div class="card-body text-center">
 
 <h5>Raja Ampat</h5>
 
-<p>Paradise Diving</p>
+<p class="text-muted">20 Tours Available</p>
 
 </div>
 
@@ -345,11 +386,12 @@ Denpasar → Labuan Bajo
 
 </div>
 
-<!-- TOUR PACKAGES -->
+
+<!-- TOURS -->
 
 <div class="container section">
 
-<h3 class="mb-4">Featured Tours</h3>
+<h3 class="text-center mb-5">Featured Tours</h3>
 
 <div class="row g-4">
 
@@ -423,6 +465,7 @@ Denpasar → Labuan Bajo
 
 </div>
 
+
 <!-- FOOTER -->
 
 <div class="bg-dark text-white text-center p-4">
@@ -430,6 +473,9 @@ Denpasar → Labuan Bajo
 <p>© 2026 Sawah Jaya Travel</p>
 
 </div>
+
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
 
