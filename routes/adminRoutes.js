@@ -296,4 +296,33 @@ res.status(500).json({error:err.message});
 
 });
 
+router.post("/tours/:id/packages", async (req,res)=>{
+
+try{
+
+const tourId = req.params.id;
+
+const {name,price} = req.body;
+
+await db.query(
+`INSERT INTO tour_packages (tour_id,name,price)
+VALUES (?,?,?)`,
+[tourId,name,price]
+);
+
+res.json({
+message:"Package berhasil ditambahkan"
+});
+
+}catch(err){
+
+res.status(500).json({
+message:"Error tambah package",
+error:err.message
+});
+
+}
+
+});
+
 module.exports=router;
