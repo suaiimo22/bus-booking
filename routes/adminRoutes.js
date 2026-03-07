@@ -348,4 +348,27 @@ error:err.message
 
 });
 
+router.get("/tours/:id/packages", async (req,res)=>{
+
+try{
+
+const tourId = req.params.id;
+
+const [rows] = await db.query(
+`SELECT * FROM tour_packages WHERE tour_id=?`,
+[tourId]
+);
+
+res.json(rows);
+
+}catch(err){
+
+res.status(500).json({
+error:err.message
+});
+
+}
+
+});
+
 module.exports=router;
