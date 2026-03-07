@@ -392,4 +392,25 @@ error:err.message
 
 });
 
+router.post("/admin/tours", async (req,res)=>{
+
+try{
+
+const {title,location,duration,cover_image,description}=req.body;
+
+await db.query(`
+INSERT INTO tours(title,location,duration,cover_image,description)
+VALUES(?,?,?,?,?)
+`,[title,location,duration,cover_image,description]);
+
+res.json({message:"Tour berhasil dibuat"});
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
+
 module.exports=router;
