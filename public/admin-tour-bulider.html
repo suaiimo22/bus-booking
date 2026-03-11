@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<title>Admin Tour Builder</title>
+
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+</head>
+
+<body class="p-4">
+
+<h2>Tour Builder</h2>
+
+<hr>
+
+<h4 id="tourTitle"></h4>
+
+<div class="row">
+
+<div class="col-md-4">
+
+<h5>Add Package</h5>
+
+<input class="form-control mb-2" id="packageName" placeholder="Package name">
+
+<input class="form-control mb-2" id="packagePrice" placeholder="Price">
+
+<button class="btn btn-primary w-100" onclick="addPackage()">Add Package</button>
+
+</div>
+
+<div class="col-md-4">
+
+<h5>Add Itinerary</h5>
+
+<input class="form-control mb-2" id="dayNumber" placeholder="Day number">
+
+<input class="form-control mb-2" id="itineraryTitle" placeholder="Title">
+
+<textarea class="form-control mb-2" id="itineraryDesc" placeholder="Description"></textarea>
+
+<button class="btn btn-success w-100" onclick="addItinerary()">Add Itinerary</button>
+
+</div>
+
+<div class="col-md-4">
+
+<h5>Add Gallery</h5>
+
+<input class="form-control mb-2" id="imageUrl" placeholder="Image URL">
+
+<button class="btn btn-warning w-100" onclick="addGallery()">Add Image</button>
+
+</div>
+
+</div>
+
+<hr>
+
+<h4>Packages</h4>
+<ul id="packageList"></ul>
+
+<h4>Itinerary</h4>
+<ul id="itineraryList"></ul>
+
+<h4>Gallery</h4>
+<div id="gallery"></div>
+
+<script>
+
+const urlParams = new URLSearchParams(window.location.search);
+const tourId = urlParams.get("id");
+
+async function loadTour(){
+
+const res = await fetch(`/admin/tours/${tourId}`);
+const data = await res.json();
+
+document.getElementById("tourTitle").innerText=data.tour.title;
+
+renderPackages(data.packages);
+renderItinerary(data.itinerary);
+renderGallery(data.gallery);
+
+}
+
+function renderPackages(packages){
+
+const list=document.getElementById("packageList");
+list.innerHTML="";
+
+packages.forEach(p=>{
+
+const li=document.createElement("li");
+li.innerText=`${p.name} - $${p.price}`;
+
+list.appendChild(li);
+
+});
+
+}
+
+function renderItinerary(items){
+
+const list=document.getElementById("itineraryList");
+list.innerHTML="";
+
+items.forEach(i=>{
+
+const li=document.createElement("li");
+li.innerText=`Day ${i.day_number} - ${i.title}`;
+
+list.appendChild(li);
+
+});
+
+}
+
+function renderGallery(images){
+
+const gallery=document.getElementById("gallery");
+gallery.innerHTML="";
+
+images.forEach(img=>{
+
+const image=document.createElement("img");
+image.src=img.image_url;
+image.width=120;
+image.classList.add("me-2","mb-2");
+
+gallery.appendChild(image);
+
+});
+
+}
+
+async function addPackage(){
+
+const name=document.getElementById("packageName").value;
+const price=document.getElementById("packagePrice").value;
+
+await fetch(`/admin/tours/${tourId}/packages`,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({name,price})
+});
+
+loadTour();
+
+}
+
+async function addItinerary(){
+
+const day_number=document.getElementById("dayNumber").value;
+const title=document.getElementById("itineraryTitle").value;
+const description=document.getElementById("itineraryDesc").value;
+
+await fetch(`/admin/tours/${tourId}/itinerary`,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({day_number,title,description})
+});
+
+loadTour();
+
+}
+
+async function addGallery(){
+
+const image_url=document.getElementById("imageUrl").value;
+
+await fetch(`/admin/tours/${tourId}/gallery`,{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({image_url})
+});
+
+loadTour();
+
+}
+
+loadTour();
+
+</script>
+
+</body>
+</html>
