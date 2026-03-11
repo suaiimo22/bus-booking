@@ -2,6 +2,7 @@ const express=require("express");
 const router=express.Router();
 const db=require("../db");
 
+
 /* ================= DASHBOARD STATS ================= */
 
 router.get("/admin/stats",async(req,res)=>{
@@ -271,20 +272,21 @@ res.json(rows);
 
 });
 
-/* ROUTE AUTOCOMPLETE SEARCH */
+
+/* ================= ROUTE AUTOCOMPLETE ================= */
 
 router.get("/routes/search", async (req,res)=>{
 
 try{
 
-const keyword = req.query.keyword || "";
+const keyword=req.query.keyword || "";
 
-const [rows] = await db.query(`
+const [rows]=await db.query(`
 SELECT DISTINCT origin
 FROM routes
 WHERE origin LIKE ?
 LIMIT 10
-`, [`%${keyword}%`]);
+`,[`%${keyword}%`]);
 
 res.json(rows);
 
@@ -296,86 +298,14 @@ res.status(500).json({error:err.message});
 
 });
 
-router.post("/tours/:id/packages", async (req,res)=>{
+
+/* ================= TOURS CRUD ================= */
+
+router.get("/admin/tours",async(req,res)=>{
 
 try{
 
-const tourId = req.params.id;
-
-const {name,price} = req.body;
-
-await db.query(
-`INSERT INTO tour_packages (tour_id,name,price)
-VALUES (?,?,?)`,
-[tourId,name,price]
-);
-
-res.json({
-message:"Package berhasil ditambahkan"
-});
-
-}catch(err){
-
-res.status(500).json({
-message:"Error tambah package",
-error:err.message
-});
-
-}
-
-});
-
-router.get("/tours/:id/packages", async (req,res)=>{
-
-try{
-
-const tourId=req.params.id;
-
-const [rows]=await db.query(
-`SELECT * FROM tour_packages WHERE tour_id=?`,
-[tourId]
-);
-
-res.json(rows);
-
-}catch(err){
-
-res.status(500).json({
-error:err.message
-});
-
-}
-
-});
-
-router.get("/tours/:id/packages", async (req,res)=>{
-
-try{
-
-const tourId = req.params.id;
-
-const [rows] = await db.query(
-`SELECT * FROM tour_packages WHERE tour_id=?`,
-[tourId]
-);
-
-res.json(rows);
-
-}catch(err){
-
-res.status(500).json({
-error:err.message
-});
-
-}
-
-});
-
-router.get("/admin/tours", async (req,res)=>{
-
-try{
-
-const [rows] = await db.query(`
+const [rows]=await db.query(`
 SELECT * FROM tours
 ORDER BY id DESC
 `);
@@ -384,15 +314,14 @@ res.json(rows);
 
 }catch(err){
 
-res.status(500).json({
-error:err.message
-});
+res.status(500).json({error:err.message});
 
 }
 
 });
 
-router.post("/admin/tours", async (req,res)=>{
+
+router.post("/admin/tours",async(req,res)=>{
 
 try{
 
@@ -412,5 +341,143 @@ res.status(500).json({error:err.message});
 }
 
 });
+
+
+/* ================= TOUR DETAIL ================= */
+
+router.get("/admin/tours/:id",async(req,res)=>{
+
+try{
+
+const id=req.params.id;
+
+const [[tour]]=await db.query(`
+SELECT * FROM tours WHERE id=?
+`,[id]);
+
+const [packages]=await db.query(`
+SELECT * FROM tour_packages WHERE tour_id=?
+`,[id]);
+
+const [itinerary]=await db.query(`
+SELECT * FROM tour_itinerary WHERE tour_id=?
+ORDER BY day_number
+`,[id]);
+
+const [gallery]=await db.query(`
+SELECT * FROM tour_gallery WHERE tour_id=?
+`,[id]);
+
+res.json({
+tour,
+packages,
+itinerary,
+gallery
+});
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
+
+
+/* ================= TOUR PACKAGES ================= */
+
+router.post("/admin/tours/:id/packages",async(req,res)=>{
+
+try{
+
+const tourId=req.params.id;
+const {name,price}=req.body;
+
+await db.query(`
+INSERT INTO tour_packages(tour_id,name,price)
+VALUES(?,?,?)
+`,[tourId,name,price]);
+
+res.json({message:"Package berhasil ditambahkan"});
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
+
+
+router.get("/admin/tours/:id/packages",async(req,res)=>{
+
+try{
+
+const tourId=req.params.id;
+
+const [rows]=await db.query(`
+SELECT * FROM tour_packages WHERE tour_id=?
+`,[tourId]);
+
+res.json(rows);
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
+
+
+/* ================= TOUR ITINERARY ================= */
+
+router.post("/admin/tours/:id/itinerary",async(req,res)=>{
+
+try{
+
+const tourId=req.params.id;
+const {day_number,title,description}=req.body;
+
+await db.query(`
+INSERT INTO tour_itinerary(tour_id,day_number,title,description)
+VALUES(?,?,?,?)
+`,[tourId,day_number,title,description]);
+
+res.json({message:"Itinerary berhasil ditambahkan"});
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
+
+
+/* ================= TOUR GALLERY ================= */
+
+router.post("/admin/tours/:id/gallery",async(req,res)=>{
+
+try{
+
+const tourId=req.params.id;
+const {image_url}=req.body;
+
+await db.query(`
+INSERT INTO tour_gallery(tour_id,image_url)
+VALUES(?,?)
+`,[tourId,image_url]);
+
+res.json({message:"Foto berhasil ditambahkan"});
+
+}catch(err){
+
+res.status(500).json({error:err.message});
+
+}
+
+});
+
 
 module.exports=router;
